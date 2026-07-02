@@ -168,7 +168,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
               <YAxis stroke="#8a90a3" />
               <Tooltip
                 contentStyle={{ background: '#161922', border: '1px solid #232735' }}
-                formatter={(v: number) => formatMoney(v, primary)}
+                formatter={(v: unknown) => formatMoney(Number(v), primary)}
               />
               <Legend />
               <Bar dataKey="salary" fill="#4ade80" />
@@ -190,7 +190,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
               <YAxis stroke="#8a90a3" />
               <Tooltip
                 contentStyle={{ background: '#161922', border: '1px solid #232735' }}
-                formatter={(v: number) => formatMoney(v, primary)}
+                formatter={(v: unknown) => formatMoney(Number(v), primary)}
               />
               <Line type="monotone" dataKey="net" stroke="#4f7cff" strokeWidth={2} />
             </LineChart>
@@ -255,7 +255,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
                 </Pie>
                 <Tooltip
                   contentStyle={{ background: '#161922', border: '1px solid #232735' }}
-                  formatter={(v: number) => formatMoney(v, primary)}
+                  formatter={(v: unknown) => formatMoney(Number(v), primary)}
                 />
                 <Legend
                   onClick={(d: { value?: string }) => {

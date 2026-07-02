@@ -44,7 +44,7 @@ const migrateImaginary = (arr: unknown): AppState['imaginary'] => {
         collected: Boolean(e.collected),
       };
     }
-    return e as AppState['imaginary'][number];
+    return e as unknown as AppState['imaginary'][number];
   });
 };
 
