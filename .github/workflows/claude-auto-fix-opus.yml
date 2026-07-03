@@ -1,0 +1,49 @@
+name: Claude Auto Fix (Opus)
+
+on:
+  issues:
+    types: [labeled, reopened]
+
+jobs:
+  claude-auto-fix:
+    # Runs when the "Opus" label is added, or when an issue that already
+    # has the "Opus" label is reopened. Use this label for harder/complex tasks.
+    if: |
+      (github.event.action == 'labeled' && github.event.label.name == 'Opus') ||
+      (github.event.action == 'reopened' && contains(github.event.issue.labels.*.name, 'Opus'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read # Required for Claude to read CI results on PRs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Required for Claude to read CI results and push a fix branch / open a PR
+          additional_permissions: |
+            actions: read
+
+          prompt: |
+            This GitHub issue was just labeled "Opus" (or reopened while carrying that label),
+            which means it should be resolved automatically using Claude Opus, reserved for
+            harder or more complex tasks.
+
+            Read the issue's title, body, and existing comments, investigate the relevant
+            parts of the codebase, implement a fix, and open a pull request that resolves it.
+            Reference the issue number in the branch name, commit message, and PR description.
+            If the issue is unclear or you cannot safely resolve it, leave a comment on the
+            issue explaining why instead of opening a PR.
+
+          claude_args: '--model claude-opus-4-8 --allowed-tools "Bash(git *),Bash(gh pr *)"'

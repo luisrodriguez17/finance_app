@@ -1,4 +1,4 @@
-name: Claude Auto Fix
+name: Claude Auto Fix (Sonnet)
 
 on:
   issues:
@@ -6,11 +6,11 @@ on:
 
 jobs:
   claude-auto-fix:
-    # Runs when the "Claude" label is added, or when an issue that already
-    # has the "Claude" label is reopened.
+    # Runs when the "Sonnet" label is added, or when an issue that already
+    # has the "Sonnet" label is reopened.
     if: |
-      (github.event.action == 'labeled' && github.event.label.name == 'Claude') ||
-      (github.event.action == 'reopened' && contains(github.event.issue.labels.*.name, 'Claude'))
+      (github.event.action == 'labeled' && github.event.label.name == 'Sonnet') ||
+      (github.event.action == 'reopened' && contains(github.event.issue.labels.*.name, 'Sonnet'))
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,8 +36,8 @@ jobs:
             actions: read
 
           prompt: |
-            This GitHub issue was just labeled "Claude" (or reopened while carrying that label),
-            which means it should be resolved automatically.
+            This GitHub issue was just labeled "Sonnet" (or reopened while carrying that label),
+            which means it should be resolved automatically using Claude Sonnet.
 
             Read the issue's title, body, and existing comments, investigate the relevant
             parts of the codebase, implement a fix, and open a pull request that resolves it.
@@ -45,4 +45,4 @@ jobs:
             If the issue is unclear or you cannot safely resolve it, leave a comment on the
             issue explaining why instead of opening a PR.
 
-          claude_args: '--allowed-tools "Bash(git *),Bash(gh pr *)"'
+          claude_args: '--model claude-sonnet-5 --allowed-tools "Bash(git *),Bash(gh pr *)"'
