@@ -46,3 +46,6 @@ jobs:
             issue explaining why instead of opening a PR.
 
           claude_args: '--model claude-sonnet-5'
+
+          # Temporary: surface full tool-call output to debug why no PR is created.
+          show_full_output: true
