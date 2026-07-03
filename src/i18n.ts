@@ -108,6 +108,12 @@ const en: Dict = {
   freqEvery6: 'Every 6 months',
   freqEvery6Short: 'Every 6 mo',
   freqYearly: 'Yearly',
+  unpaid: 'Unpaid',
+  noBillsMatchFilter: 'No bills match this filter.',
+  sourceSubscription: 'Subscription',
+  inactive: 'Inactive',
+  tapToEdit: 'Tap an item to see details and edit it.',
+  fromBills: 'From bills',
 
   // Credit Cards
   cardsTitle: 'Credit Cards',
@@ -174,6 +180,9 @@ const en: Dict = {
   entries: 'Entries',
   nothingYet: 'Nothing here yet.',
   person: 'Person',
+  allCollected: 'All collected',
+  peopleCount: '{n} people',
+  entriesCount: '{n} entries',
 
   // Analytics
   analyticsTitle: 'Analytics',
@@ -360,6 +369,12 @@ const es: Dict = {
   freqEvery6: 'Cada 6 meses',
   freqEvery6Short: 'Cada 6 m',
   freqYearly: 'Anual',
+  unpaid: 'Pendientes',
+  noBillsMatchFilter: 'No hay gastos con este filtro.',
+  sourceSubscription: 'Suscripción',
+  inactive: 'Inactiva',
+  tapToEdit: 'Toque un elemento para ver detalles y editarlo.',
+  fromBills: 'De gastos',
 
   // Credit Cards
   cardsTitle: 'Tarjetas de Crédito',
@@ -426,6 +441,9 @@ const es: Dict = {
   entries: 'Entradas',
   nothingYet: 'Nada aún.',
   person: 'Persona',
+  allCollected: 'Todo cobrado',
+  peopleCount: '{n} personas',
+  entriesCount: '{n} entradas',
 
   // Analytics
   analyticsTitle: 'Análisis',

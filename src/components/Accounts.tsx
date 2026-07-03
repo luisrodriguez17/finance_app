@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Account, AppState, Currency } from '../types';
 import { formatMoney, uid, convert } from '../utils';
 import type { T } from '../i18n';
+import { AddToggle, EntryItem, Field } from './ui';
 
 type Props = {
   state: AppState;
@@ -10,6 +11,9 @@ type Props = {
 };
 
 export default function Accounts({ state, update, t }: Props) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
   const [currency, setCurrency] = useState<Currency>(state.primaryCurrency);
@@ -20,6 +24,7 @@ export default function Accounts({ state, update, t }: Props) {
     update((s) => ({ ...s, accounts: [...s.accounts, acc] }));
     setName('');
     setBalance('');
+    setShowAdd(false);
   };
 
   const updateAccount = (id: string, patch: Partial<Account>) =>
@@ -51,66 +56,61 @@ export default function Accounts({ state, update, t }: Props) {
         </div>
       </div>
 
-      <div className="cards">
-        <div className="card">
-          <h3>{t('crcTotal')}</h3>
-          <div className="value">{formatMoney(totalCRC, 'CRC')}</div>
-        </div>
-        <div className="card">
-          <h3>{t('usdTotal')}</h3>
-          <div className="value">{formatMoney(totalUSD, 'USD')}</div>
-        </div>
-      </div>
-
-      <div className="section">
-        <h3>{t('addAccount')}</h3>
-        <div className="form-grid">
-          <input placeholder={t('accountNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
-          <input type="number" placeholder={t('balance')} value={balance} onChange={(e) => setBalance(e.target.value)} />
-          <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
-            <option value="CRC">₡ CRC</option>
-            <option value="USD">$ USD</option>
-          </select>
-          <button className="primary" onClick={add}>{t('add')}</button>
-        </div>
-      </div>
-
       <div className="section">
         <h3>{t('yourAccounts')}</h3>
+
+        <AddToggle open={showAdd} label={t('addAccount')} onClick={() => setShowAdd((v) => !v)} />
+        {showAdd && (
+          <div className="add-form">
+            <div className="field-grid">
+              <Field label={t('name')} span2>
+                <input placeholder={t('accountNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
+              </Field>
+              <Field label={t('balance')}>
+                <input type="number" placeholder={t('balance')} value={balance} onChange={(e) => setBalance(e.target.value)} />
+              </Field>
+              <Field label={t('currency')}>
+                <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
+                  <option value="CRC">₡ CRC</option>
+                  <option value="USD">$ USD</option>
+                </select>
+              </Field>
+            </div>
+            <div className="entry-actions">
+              <button className="primary" onClick={add}>{t('add')}</button>
+            </div>
+          </div>
+        )}
+
         {state.accounts.length === 0 ? (
           <p className="muted">{t('noAccountsYet')}</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>{t('name')}</th>
-                <th>{t('balance')}</th>
-                <th>{t('currency')}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.accounts.map((a) => (
-                <tr key={a.id}>
-                  <td data-label={t('name')}>
-                    <span className="row" style={{ flex: 1, minWidth: 0 }}>
-                      <span className="currency-badge">{a.currency === 'USD' ? '$' : '₡'}</span>
-                      <input
-                        value={a.name}
-                        onChange={(e) => updateAccount(a.id, { name: e.target.value })}
-                        style={{ flex: 1, minWidth: 0 }}
-                      />
-                    </span>
-                  </td>
-                  <td data-label={t('balance')}>
+          <div className="entry-list">
+            {state.accounts.map((a) => (
+              <EntryItem
+                key={a.id}
+                open={expandedId === a.id}
+                onToggle={() => setExpandedId(expandedId === a.id ? null : a.id)}
+                info={
+                  <span className="row" style={{ flexWrap: 'nowrap', minWidth: 0 }}>
+                    <span className="currency-badge">{a.currency === 'USD' ? '$' : '₡'}</span>
+                    <span className="entry-title" style={{ minWidth: 0 }}>{a.name || '—'}</span>
+                  </span>
+                }
+                side={<div className="entry-amount">{formatMoney(a.balance, a.currency)}</div>}
+              >
+                <div className="field-grid">
+                  <Field label={t('name')} span2>
+                    <input value={a.name} onChange={(e) => updateAccount(a.id, { name: e.target.value })} />
+                  </Field>
+                  <Field label={t('balance')}>
                     <input
                       type="number"
                       value={a.balance}
                       onChange={(e) => updateAccount(a.id, { balance: Number(e.target.value) })}
-                      style={{ width: 140 }}
                     />
-                  </td>
-                  <td data-label={t('currency')}>
+                  </Field>
+                  <Field label={t('currency')}>
                     <select
                       value={a.currency}
                       onChange={(e) => updateAccount(a.id, { currency: e.target.value as Currency })}
@@ -118,14 +118,14 @@ export default function Accounts({ state, update, t }: Props) {
                       <option value="CRC">₡ CRC</option>
                       <option value="USD">$ USD</option>
                     </select>
-                  </td>
-                  <td>
-                    <button className="danger" onClick={() => remove(a.id)}>{t('remove')}</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </Field>
+                </div>
+                <div className="entry-actions">
+                  <button className="danger" onClick={() => remove(a.id)}>{t('remove')}</button>
+                </div>
+              </EntryItem>
+            ))}
+          </div>
         )}
       </div>
     </div>

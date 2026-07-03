@@ -1,8 +1,9 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import type { AppState, Bill, CreditCard } from '../types';
 import { formatMoney, uid, convert } from '../utils';
 import { currentMonthKey, ensureMonth } from '../store';
 import type { T } from '../i18n';
+import { AddToggle, EntryItem, Field } from './ui';
 
 type Props = {
   state: AppState;
@@ -11,6 +12,9 @@ type Props = {
 };
 
 export default function CreditCards({ state, update, t }: Props) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   const [name, setName] = useState('');
   const [owedCRC, setOwedCRC] = useState('');
   const [owedUSD, setOwedUSD] = useState('');
@@ -31,6 +35,7 @@ export default function CreditCards({ state, update, t }: Props) {
     setName('');
     setOwedCRC('');
     setOwedUSD('');
+    setShowAdd(false);
   };
 
   const updateCard = (id: string, patch: Partial<CreditCard>) =>
@@ -144,47 +149,34 @@ export default function CreditCards({ state, update, t }: Props) {
         </div>
       </div>
 
-      <div className="cards">
-        <div className="card">
-          <h3>{t('crcOwed')}</h3>
-          <div className="value negative">{formatMoney(totalCRC, 'CRC')}</div>
-        </div>
-        <div className="card">
-          <h3>{t('usdOwed')}</h3>
-          <div className="value negative">{formatMoney(totalUSD, 'USD')}</div>
-        </div>
-      </div>
-
-      <div className="section">
-        <h3>{t('addCard')}</h3>
-        <div className="form-grid">
-          <input placeholder={t('cardNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
-          <input type="number" placeholder={t('owedInCRC')} value={owedCRC} onChange={(e) => setOwedCRC(e.target.value)} />
-          <input type="number" placeholder={t('owedInUSD')} value={owedUSD} onChange={(e) => setOwedUSD(e.target.value)} />
-          <button className="primary" onClick={add}>{t('add')}</button>
-        </div>
-      </div>
-
       <div className="section">
         <h3>{t('yourCards')}</h3>
+
+        <AddToggle open={showAdd} label={t('addCard')} onClick={() => setShowAdd((v) => !v)} />
+        {showAdd && (
+          <div className="add-form">
+            <div className="field-grid">
+              <Field label={t('name')} span2>
+                <input placeholder={t('cardNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
+              </Field>
+              <Field label={t('owedInCRC')}>
+                <input type="number" value={owedCRC} onChange={(e) => setOwedCRC(e.target.value)} />
+              </Field>
+              <Field label={t('owedInUSD')}>
+                <input type="number" value={owedUSD} onChange={(e) => setOwedUSD(e.target.value)} />
+              </Field>
+            </div>
+            <div className="entry-actions">
+              <button className="primary" onClick={add}>{t('add')}</button>
+            </div>
+          </div>
+        )}
+
         {state.creditCards.length === 0 ? (
           <p className="muted">{t('noCardsYet')}</p>
         ) : (
           <>
-          <table>
-            <thead>
-              <tr>
-                <th>{t('name')}</th>
-                <th>{t('manualCRC')}</th>
-                <th>{t('fromBillsCRC')}</th>
-                <th>{t('totalCRC')}</th>
-                <th>{t('manualUSD')}</th>
-                <th>{t('fromBillsUSD')}</th>
-                <th>{t('totalUSD')}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+            <div className="entry-list">
               {state.creditCards.map((c) => {
                 const fromBillsCRC = cardBillsByCard(c.id, 'CRC');
                 const fromBillsUSD = cardBillsByCard(c.id, 'USD');
@@ -194,83 +186,99 @@ export default function CreditCards({ state, update, t }: Props) {
                 const previewDeltaCRC = isCorrecting ? Number(realCRC) - totalCardCRC : 0;
                 const previewDeltaUSD = isCorrecting ? Number(realUSD) - totalCardUSD : 0;
                 return (
-                  <Fragment key={c.id}>
-                    <tr>
-                      <td data-label={t('name')}>
+                  <EntryItem
+                    key={c.id}
+                    open={expandedId === c.id}
+                    onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                    info={
+                      <>
+                        <div className="entry-title">{c.name || '—'}</div>
+                        <div className="entry-meta">
+                          <span>
+                            {t('fromBills')}: {formatMoney(fromBillsCRC, 'CRC')} · {formatMoney(fromBillsUSD, 'USD')}
+                          </span>
+                        </div>
+                      </>
+                    }
+                    side={
+                      <>
+                        {totalCardCRC !== 0 && <div className="entry-amount">{formatMoney(totalCardCRC, 'CRC')}</div>}
+                        {totalCardUSD !== 0 && <div className="entry-amount">{formatMoney(totalCardUSD, 'USD')}</div>}
+                        {totalCardCRC === 0 && totalCardUSD === 0 && <div className="entry-amount muted">—</div>}
+                      </>
+                    }
+                  >
+                    <div className="field-grid">
+                      <Field label={t('name')} span2>
                         <input value={c.name} onChange={(e) => updateCard(c.id, { name: e.target.value })} />
-                      </td>
-                      <td data-label={t('manualCRC')}>
+                      </Field>
+                      <Field label={t('manualCRC')}>
                         <input
                           type="number"
                           value={c.owedCRC}
                           onChange={(e) => updateCard(c.id, { owedCRC: Number(e.target.value) })}
-                          style={{ width: 120 }}
                         />
-                      </td>
-                      <td data-label={t('fromBillsCRC')} className="muted">{formatMoney(fromBillsCRC, 'CRC')}</td>
-                      <td data-label={t('totalCRC')} style={{ fontWeight: 600 }}>{formatMoney(totalCardCRC, 'CRC')}</td>
-                      <td data-label={t('manualUSD')}>
+                      </Field>
+                      <Field label={t('manualUSD')}>
                         <input
                           type="number"
                           value={c.owedUSD}
                           onChange={(e) => updateCard(c.id, { owedUSD: Number(e.target.value) })}
-                          style={{ width: 120 }}
                         />
-                      </td>
-                      <td data-label={t('fromBillsUSD')} className="muted">{formatMoney(fromBillsUSD, 'USD')}</td>
-                      <td data-label={t('totalUSD')} style={{ fontWeight: 600 }}>{formatMoney(totalCardUSD, 'USD')}</td>
-                      <td>
-                        <div className="row">
-                          <button className="ghost" onClick={() => (isCorrecting ? cancelCorrection() : startCorrection(c))}>
-                            {isCorrecting ? t('cancel') : t('correct')}
-                          </button>
-                          <button className="danger" onClick={() => remove(c.id)}>{t('remove')}</button>
-                        </div>
-                      </td>
-                    </tr>
+                      </Field>
+                      <Field label={t('fromBillsCRC')}>
+                        <span className="entry-amount muted">{formatMoney(fromBillsCRC, 'CRC')}</span>
+                      </Field>
+                      <Field label={t('fromBillsUSD')}>
+                        <span className="entry-amount muted">{formatMoney(fromBillsUSD, 'USD')}</span>
+                      </Field>
+                      <Field label={t('totalCRC')}>
+                        <span className="entry-amount">{formatMoney(totalCardCRC, 'CRC')}</span>
+                      </Field>
+                      <Field label={t('totalUSD')}>
+                        <span className="entry-amount">{formatMoney(totalCardUSD, 'USD')}</span>
+                      </Field>
+                    </div>
+
                     {isCorrecting && (
-                      <tr>
-                        <td colSpan={8} style={{ background: '#1f2330' }}>
-                          <div className="row" style={{ padding: 8, flexWrap: 'wrap' }}>
-                            <span className="muted">{t('correctionPrompt')}</span>
-                            <label className="row">
-                              <span>{t('realCRC')}</span>
-                              <input
-                                type="number"
-                                value={realCRC}
-                                onChange={(e) => setRealCRC(e.target.value)}
-                                style={{ width: 140 }}
-                              />
-                              <span className={previewDeltaCRC === 0 ? 'muted' : previewDeltaCRC > 0 ? 'value negative' : 'value positive'}>
-                                Δ {formatMoney(previewDeltaCRC, 'CRC')}
-                              </span>
-                            </label>
-                            <label className="row">
-                              <span>{t('realUSD')}</span>
-                              <input
-                                type="number"
-                                value={realUSD}
-                                onChange={(e) => setRealUSD(e.target.value)}
-                                style={{ width: 140 }}
-                              />
-                              <span className={previewDeltaUSD === 0 ? 'muted' : previewDeltaUSD > 0 ? 'value negative' : 'value positive'}>
-                                Δ {formatMoney(previewDeltaUSD, 'USD')}
-                              </span>
-                            </label>
-                            <button className="primary" onClick={() => applyCorrection(c)}>
-                              {t('createOffset')}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                      <>
+                        <p className="muted" style={{ marginBottom: 0 }}>{t('correctionPrompt')}</p>
+                        <div className="field-grid">
+                          <Field label={t('realCRC')}>
+                            <input type="number" value={realCRC} onChange={(e) => setRealCRC(e.target.value)} />
+                          </Field>
+                          <Field label={t('realUSD')}>
+                            <input type="number" value={realUSD} onChange={(e) => setRealUSD(e.target.value)} />
+                          </Field>
+                          <span className={previewDeltaCRC === 0 ? 'muted' : previewDeltaCRC > 0 ? 'value negative' : 'value positive'}>
+                            Δ {formatMoney(previewDeltaCRC, 'CRC')}
+                          </span>
+                          <span className={previewDeltaUSD === 0 ? 'muted' : previewDeltaUSD > 0 ? 'value negative' : 'value positive'}>
+                            Δ {formatMoney(previewDeltaUSD, 'USD')}
+                          </span>
+                        </div>
+                      </>
                     )}
-                  </Fragment>
+
+                    <div className="entry-actions">
+                      {isCorrecting ? (
+                        <>
+                          <button className="ghost" onClick={cancelCorrection}>{t('cancel')}</button>
+                          <button className="primary" onClick={() => applyCorrection(c)}>{t('createOffset')}</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="ghost" onClick={() => startCorrection(c)}>{t('correct')}</button>
+                          <button className="danger" onClick={() => remove(c.id)}>{t('remove')}</button>
+                        </>
+                      )}
+                    </div>
+                  </EntryItem>
                 );
               })}
-            </tbody>
-          </table>
-          <p className="muted">{t('cardsHelp')}</p>
-          <p className="muted">{t('correctHelp')}</p>
+            </div>
+            <p className="muted" style={{ marginTop: 10 }}>{t('cardsHelp')}</p>
+            <p className="muted">{t('correctHelp')}</p>
           </>
         )}
       </div>
