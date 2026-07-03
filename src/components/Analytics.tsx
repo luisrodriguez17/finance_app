@@ -56,6 +56,20 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
   const primary = state.primaryCurrency;
   const rate = state.exchangeRate;
 
+  const isDark = state.theme !== 'light';
+  const chartAccent = isDark ? 'oklch(0.62 0.14 152)' : 'oklch(0.45 0.13 152)';
+  const chartWarn = isDark ? 'oklch(0.68 0.15 40)' : 'oklch(0.55 0.16 40)';
+  const chartMuted = isDark ? 'oklch(0.7 0.02 150)' : 'oklch(0.45 0.01 80)';
+  const chartGrid = isDark ? 'oklch(1 0 0 / 8%)' : 'oklch(0.2 0.01 80 / 10%)';
+  const chartSurface = isDark ? 'oklch(0.21 0.015 150)' : 'oklch(0.995 0.005 80)';
+  const chartBorder = isDark ? 'oklch(1 0 0 / 10%)' : 'oklch(0.2 0.01 80 / 12%)';
+  const tooltipStyle = {
+    background: chartSurface,
+    border: `1px solid ${chartBorder}`,
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8rem',
+  };
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedMonths, setSelectedMonths] = useState<Set<string> | null>(null);
 
@@ -138,16 +152,19 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
       <h2>{t('analyticsTitle')}</h2>
       <p className="muted">{t('analyticsIntro', { cur: primary })}</p>
 
+      <div className="hero">
+        <div className="hero-label">{t('totalSpent')}</div>
+        <div className="hero-value">{formatMoney(totalSpent, primary)}</div>
+        <div className="muted" style={{ marginTop: 8, fontSize: '0.72rem' }}>
+          {selectedMonths ? t('inSelectedMonths') : t('allTime')}
+        </div>
+      </div>
+
       <div className="cards">
         <div className="card">
           <h3>{t('monthsShown')}</h3>
           <div className="value">{filteredMonthly.length}</div>
           <div className="sub">{t('ofXTracked', { n: monthly.length })}</div>
-        </div>
-        <div className="card">
-          <h3>{t('totalSpent')}</h3>
-          <div className="value">{formatMoney(totalSpent, primary)}</div>
-          <div className="sub">{selectedMonths ? t('inSelectedMonths') : t('allTime')}</div>
         </div>
         <div className="card">
           <h3>{t('avgMonthlyBills')}</h3>
@@ -193,16 +210,16 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={filteredMonthly}>
-              <CartesianGrid stroke="#232735" />
-              <XAxis dataKey="label" stroke="#8a90a3" />
-              <YAxis stroke="#8a90a3" />
+              <CartesianGrid stroke={chartGrid} />
+              <XAxis dataKey="label" stroke={chartMuted} />
+              <YAxis stroke={chartMuted} />
               <Tooltip
-                contentStyle={{ background: '#161922', border: '1px solid #232735' }}
+                contentStyle={tooltipStyle}
                 formatter={(v: unknown) => formatMoney(Number(v), primary)}
               />
               <Legend />
-              <Bar dataKey="salary" fill="#4ade80" />
-              <Bar dataKey="bills" fill="#f87171" />
+              <Bar dataKey="salary" fill={chartAccent} />
+              <Bar dataKey="bills" fill={chartWarn} />
             </BarChart>
           </ResponsiveContainer>
         )}
@@ -215,14 +232,14 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={filteredMonthly}>
-              <CartesianGrid stroke="#232735" />
-              <XAxis dataKey="label" stroke="#8a90a3" />
-              <YAxis stroke="#8a90a3" />
+              <CartesianGrid stroke={chartGrid} />
+              <XAxis dataKey="label" stroke={chartMuted} />
+              <YAxis stroke={chartMuted} />
               <Tooltip
-                contentStyle={{ background: '#161922', border: '1px solid #232735' }}
+                contentStyle={tooltipStyle}
                 formatter={(v: unknown) => formatMoney(Number(v), primary)}
               />
-              <Line type="monotone" dataKey="net" stroke="#4f7cff" strokeWidth={2} />
+              <Line type="monotone" dataKey="net" stroke={chartAccent} strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         )}
@@ -285,7 +302,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
                   })}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: '#161922', border: '1px solid #232735' }}
+                  contentStyle={tooltipStyle}
                   formatter={(v: unknown) => formatMoney(Number(v), primary)}
                 />
                 <Legend

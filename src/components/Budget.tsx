@@ -15,6 +15,15 @@ export const computeReserve = (r: SavingsReserve, balanceCRC: number, balanceUSD
   return r.mode === 'percent' ? base * (r.value / 100) : r.value;
 };
 
+const ALLOC_COLORS_DARK = [
+  'oklch(0.62 0.14 152)', 'oklch(0.5 0.12 152)', 'oklch(0.72 0.1 152)',
+  'oklch(0.4 0.08 152)', 'oklch(0.85 0.05 152)', 'oklch(0.3 0.03 152)',
+];
+const ALLOC_COLORS_LIGHT = [
+  'oklch(0.45 0.13 152)', 'oklch(0.55 0.13 152)', 'oklch(0.65 0.11 152)',
+  'oklch(0.35 0.09 152)', 'oklch(0.82 0.06 152)', 'oklch(0.25 0.04 152)',
+];
+
 export default function Budget({ state, month, update, t }: Props) {
   return (
     <div>
@@ -48,10 +57,32 @@ function SalaryAllocations({ state, month, update, t }: Props) {
 
   const totalPct = state.budget.reduce((s, b) => s + b.percentage, 0);
   const salary = convert(month.salary.amount, month.salary.currency, state.primaryCurrency, state.exchangeRate);
+  const isDark = state.theme !== 'light';
+  const allocColors = isDark ? ALLOC_COLORS_DARK : ALLOC_COLORS_LIGHT;
 
   return (
     <>
       <p className="muted">{t('salaryAllocationsIntro', { cur: state.primaryCurrency })}</p>
+
+      <div className="hero">
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div className="hero-label">{t('salaryAllocations')}</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)' }}>
+            {t('pctAllocated', { n: totalPct })}
+          </div>
+        </div>
+        <div className="hero-value">{formatMoney(salary, state.primaryCurrency)}</div>
+        {state.budget.length > 0 && (
+          <div className="hero-bar" style={{ background: 'var(--surface-border-strong)' }}>
+            {state.budget.map((b, i) => (
+              <div
+                key={b.id}
+                style={{ width: `${Math.max(0, Math.min(100, b.percentage))}%`, background: allocColors[i % allocColors.length] }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="section">
         <h3>{t('addSalaryAllocation')}</h3>
@@ -149,7 +180,6 @@ function Reserves({
   const reservedUSD = state.reserves
     .filter((r) => r.currency === 'USD')
     .reduce((s, r) => s + computeReserve(r, balanceCRC, balanceUSD), 0);
-
   return (
     <>
       <h3 style={{ marginTop: 32 }}>{t('savingsReservesTitle')}</h3>

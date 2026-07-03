@@ -570,9 +570,27 @@ function BillsList({ month, state, update, t }: Props) {
   const paidCRC = sumBy(paidBills, 'CRC');
   const paidUSD = sumBy(paidBills, 'USD');
 
+  const fullTotal = combine(totalCRC, totalUSD);
+  const paidTotal = combine(paidCRC, paidUSD);
+  const paidPct = fullTotal > 0 ? Math.min(100, Math.round((paidTotal / fullTotal) * 100)) : 0;
+
   return (
     <div className="section">
       <h3>{t('billsThisMonth')}</h3>
+
+      <div className="hero" style={{ marginTop: 0 }}>
+        <div className="hero-label">{t('fullTotal')}</div>
+        <div className="hero-value">{formatMoney(fullTotal, primary)}</div>
+        <div className="hero-bar">
+          <div style={{ width: `${paidPct}%` }} />
+          <div style={{ width: `${100 - paidPct}%` }} />
+        </div>
+        <div className="hero-sub">
+          <span>{t('alreadyPaid')}: {formatMoney(paidTotal, primary)}</span>
+          <span>{formatMoney(fullTotal - paidTotal, primary)}</span>
+        </div>
+      </div>
+
       <div className="cards" style={{ marginBottom: 12 }}>
         <div className="card">
           <h3>{t('accountBills')}</h3>
@@ -586,20 +604,6 @@ function BillsList({ month, state, update, t }: Props) {
           <div className="value">{formatMoney(combine(cardCRC, cardUSD), primary)}</div>
           <div className="sub">
             {formatMoney(cardCRC, 'CRC')} · {formatMoney(cardUSD, 'USD')}
-          </div>
-        </div>
-        <div className="card">
-          <h3>{t('fullTotal')}</h3>
-          <div className="value">{formatMoney(combine(totalCRC, totalUSD), primary)}</div>
-          <div className="sub">
-            {formatMoney(totalCRC, 'CRC')} · {formatMoney(totalUSD, 'USD')}
-          </div>
-        </div>
-        <div className="card">
-          <h3>{t('alreadyPaid')}</h3>
-          <div className="value">{formatMoney(combine(paidCRC, paidUSD), primary)}</div>
-          <div className="sub">
-            {formatMoney(paidCRC, 'CRC')} · {formatMoney(paidUSD, 'USD')}
           </div>
         </div>
       </div>

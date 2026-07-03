@@ -28,6 +28,14 @@ export const formatMoney = (amount: number, currency: Currency) => {
   })}`;
 };
 
+export const initials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('') || '?';
+
 export const convert = (
   amount: number,
   from: Currency,

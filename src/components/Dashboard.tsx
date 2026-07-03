@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AppState, MonthSnapshot } from '../types';
-import { formatMoney, convert } from '../utils';
+import { formatMoney, convert, initials } from '../utils';
 import { computeReserve } from './Budget';
 import type { T } from '../i18n';
 
@@ -70,9 +70,35 @@ export default function Dashboard({ state, month, update, t }: Props) {
   const emergencyCRC = remainingCRC + reservedCRC;
   const emergencyUSD = remainingUSD + reservedUSD;
 
+  const heroCombined = showEmergency
+    ? convert(emergencyCRC, 'CRC', primary, rate) + convert(emergencyUSD, 'USD', primary, rate)
+    : remainingCombined;
+  const heroCRC = showEmergency ? emergencyCRC : remainingCRC;
+  const heroUSD = showEmergency ? emergencyUSD : remainingUSD;
+
   return (
     <div>
       <h2>{t('dashboard')}</h2>
+
+      <div className={`hero ${heroCombined < 0 ? 'debt' : ''}`}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div className="hero-label">{t('remainingCombined')}</div>
+          <div
+            onClick={() => setShowEmergency((v) => !v)}
+            style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--accent)', cursor: 'pointer' }}
+          >
+            {showEmergency ? t('inclReservesEmergency') : t('reservesLockedAway')}
+          </div>
+        </div>
+        <div className={`hero-value ${heroCombined < 0 ? 'negative' : ''}`}>
+          {formatMoney(heroCombined, primary)}
+        </div>
+        <div className="hero-sub">
+          <span>{formatMoney(heroCRC, 'CRC')}</span>
+          <span>{formatMoney(heroUSD, 'USD')}</span>
+        </div>
+        <div className="muted" style={{ marginTop: 8, fontSize: '0.72rem' }}>{t('rateNote', { rate })}</div>
+      </div>
 
       <div className="cards">
         <div className="card">
@@ -99,50 +125,18 @@ export default function Dashboard({ state, month, update, t }: Props) {
 
         <div className="card">
           <h3>{t('remainingCRC')}</h3>
-          <div className={`value ${(showEmergency ? emergencyCRC : remainingCRC) < 0 ? 'negative' : 'positive'}`}>
-            {formatMoney(showEmergency ? emergencyCRC : remainingCRC, 'CRC')}
-          </div>
-          <div className="sub">
-            {showEmergency ? t('inclReservesEmergency') : t('reservesLockedAway')}
-          </div>
+          <div className={`value ${heroCRC < 0 ? 'negative' : 'positive'}`}>{formatMoney(heroCRC, 'CRC')}</div>
         </div>
 
         <div className="card">
           <h3>{t('remainingUSD')}</h3>
-          <div className={`value ${(showEmergency ? emergencyUSD : remainingUSD) < 0 ? 'negative' : 'positive'}`}>
-            {formatMoney(showEmergency ? emergencyUSD : remainingUSD, 'USD')}
-          </div>
-          <div className="sub">
-            {showEmergency ? t('inclReservesEmergency') : t('reservesLockedAway')}
-          </div>
-        </div>
-
-        <div className="card">
-          <h3>{t('remainingCombined')}</h3>
-          <div className={`value ${remainingCombined < 0 ? 'negative' : 'positive'}`}>
-            {formatMoney(
-              showEmergency
-                ? convert(emergencyCRC, 'CRC', primary, rate) + convert(emergencyUSD, 'USD', primary, rate)
-                : remainingCombined,
-              primary
-            )}
-          </div>
-          <div className="sub">{t('rateNote', { rate })}</div>
+          <div className={`value ${heroUSD < 0 ? 'negative' : 'positive'}`}>{formatMoney(heroUSD, 'USD')}</div>
         </div>
       </div>
 
       <div className="section">
-        <h3>{t('savingsReserves')}</h3>
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <div className="muted">{t('lockedFromSpending')}</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-              {formatMoney(reservedCRC, 'CRC')} · {formatMoney(reservedUSD, 'USD')}
-            </div>
-            <div className="muted" style={{ marginTop: 4 }}>
-              {t('reservesInfo')}
-            </div>
-          </div>
+          <h3 style={{ margin: 0 }}>{t('savingsReserves')}</h3>
           <label className="row" style={{ cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -150,51 +144,74 @@ export default function Dashboard({ state, month, update, t }: Props) {
               checked={showEmergency}
               onChange={() => setShowEmergency((v) => !v)}
             />
-            <span>{t('showEmergencyView')}</span>
           </label>
         </div>
+        <div className="muted" style={{ marginTop: 2 }}>{t('lockedFromSpending')}</div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'var(--font-mono)', marginTop: 6 }}>
+          {formatMoney(reservedCRC, 'CRC')} · {formatMoney(reservedUSD, 'USD')}
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>
+          {t('showEmergencyView')}
+        </div>
+        <p className="muted" style={{ marginTop: 8 }}>{t('reservesInfo')}</p>
       </div>
 
       <div className="section">
-        <h3>{t('creditCardDebt')}</h3>
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <div className="muted">{t('totalOwedAcrossCards')}</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-              {formatMoney(ccCRC, 'CRC')} · {formatMoney(ccUSD, 'USD')}
-            </div>
-          </div>
-          <label className="row" style={{ cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              className="checkbox"
-              checked={state.includeCreditCardInBills}
-              onChange={toggleCC}
-            />
-            <span>{t('includeCcInBills')}</span>
-          </label>
+          <h3 style={{ margin: 0 }}>{t('creditCardDebt')}</h3>
+          <input
+            type="checkbox"
+            className="checkbox"
+            checked={state.includeCreditCardInBills}
+            onChange={toggleCC}
+          />
         </div>
+        <div className="muted" style={{ marginTop: 2 }}>{t('totalOwedAcrossCards')}</div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'var(--font-mono)', marginTop: 6 }}>
+          {formatMoney(ccCRC, 'CRC')} · {formatMoney(ccUSD, 'USD')}
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>{t('includeCcInBills')}</div>
       </div>
 
       <div className="section">
-        <h3>{t('imaginaryMoney')}</h3>
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <div>
-            <div className="muted">{t('outstandingPeopleOweYou')}</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-              {formatMoney(imaginaryCRC, 'CRC')} · {formatMoney(imaginaryUSD, 'USD')}
-            </div>
-          </div>
-          <label className="row" style={{ cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              className="checkbox"
-              checked={state.includeImaginaryInDashboard}
-              onChange={toggleImaginary}
-            />
-            <span>{t('includeImgInProjection')}</span>
-          </label>
+          <h3 style={{ margin: 0 }}>{t('imaginaryMoney')}</h3>
+          <input
+            type="checkbox"
+            className="checkbox"
+            checked={state.includeImaginaryInDashboard}
+            onChange={toggleImaginary}
+          />
         </div>
+        <div className="muted" style={{ marginTop: 2 }}>{t('outstandingPeopleOweYou')}</div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'var(--font-mono)', marginTop: 6 }}>
+          {formatMoney(imaginaryCRC, 'CRC')} · {formatMoney(imaginaryUSD, 'USD')}
+        </div>
+        <div className="muted" style={{ marginTop: 6 }}>{t('includeImgInProjection')}</div>
+
+        {pendingImaginary.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <div className="muted" style={{ textTransform: 'uppercase', fontSize: '0.68rem', letterSpacing: '0.05em' }}>
+              {t('peopleWhoOweYou')}
+            </div>
+            {pendingImaginary.map((e) => (
+              <div className="list-row" key={e.id}>
+                <span className="row">
+                  <span className="avatar-badge">{initials(e.personName)}</span>
+                  {e.personName}
+                </span>
+                <span className="amount">
+                  {[
+                    e.amountCRC ? formatMoney(e.amountCRC, 'CRC') : null,
+                    e.amountUSD ? formatMoney(e.amountUSD, 'USD') : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || formatMoney(0, 'CRC')}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

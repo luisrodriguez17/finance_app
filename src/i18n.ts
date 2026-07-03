@@ -16,6 +16,7 @@ const en: Dict = {
   month: 'Month',
   loading: 'Loading…',
   menu: 'Menu',
+  more: 'More',
 
   // Common
   add: 'Add',
@@ -61,6 +62,7 @@ const en: Dict = {
   imaginaryMoney: 'Imaginary money',
   outstandingPeopleOweYou: 'Outstanding (people owe you)',
   includeImgInProjection: 'Include imaginary money in projection',
+  peopleWhoOweYou: 'People who owe you',
 
   // Accounts
   accountsTitle: 'Accounts',
@@ -205,6 +207,10 @@ const en: Dict = {
 
   // Settings
   settings: 'Settings',
+  appearance: 'Appearance',
+  theme: 'Theme',
+  themeDark: 'Dark',
+  themeLight: 'Light',
   currencySection: 'Currency',
   primaryCurrency: 'Primary (display) currency',
   colones: '₡ Colones',
@@ -261,6 +267,7 @@ const es: Dict = {
   month: 'Mes',
   loading: 'Cargando…',
   menu: 'Menú',
+  more: 'Más',
 
   // Common
   add: 'Agregar',
@@ -307,6 +314,7 @@ const es: Dict = {
   imaginaryMoney: 'Dinero por cobrar',
   outstandingPeopleOweYou: 'Pendiente (le deben a usted)',
   includeImgInProjection: 'Incluir dinero por cobrar en la proyección',
+  peopleWhoOweYou: 'Personas que le deben',
 
   // Accounts
   accountsTitle: 'Cuentas',
@@ -451,6 +459,10 @@ const es: Dict = {
 
   // Settings
   settings: 'Ajustes',
+  appearance: 'Apariencia',
+  theme: 'Tema',
+  themeDark: 'Oscuro',
+  themeLight: 'Claro',
   currencySection: 'Moneda',
   primaryCurrency: 'Moneda principal (para mostrar)',
   colones: '₡ Colones',

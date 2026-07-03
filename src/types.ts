@@ -1,5 +1,6 @@
 export type Currency = 'CRC' | 'USD';
 export type Language = 'en' | 'es';
+export type Theme = 'dark' | 'light';
 
 export interface Bill {
   id: string;
@@ -110,4 +111,5 @@ export interface AppState {
   reserves: SavingsReserve[];
   salarySchedule: SalarySchedule;
   language: Language;
+  theme: Theme;
 }

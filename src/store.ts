@@ -18,6 +18,7 @@ const defaultState: AppState = {
   includeImaginaryInDashboard: false,
   reserves: [],
   language: 'en',
+  theme: 'dark',
   salarySchedule: {
     enabled: false,
     amount: 0,

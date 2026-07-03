@@ -135,6 +135,15 @@ export default function CreditCards({ state, update, t }: Props) {
       <h2>{t('cardsTitle')}</h2>
       <p className="muted">{t('cardsIntro')}</p>
 
+      <div className="hero debt">
+        <div className="hero-label">{t('combinedTotal', { cur: state.primaryCurrency })}</div>
+        <div className="hero-value negative">{formatMoney(combined, state.primaryCurrency)}</div>
+        <div className="hero-sub" style={{ marginTop: 12 }}>
+          <span>{formatMoney(totalCRC, 'CRC')}</span>
+          <span>{formatMoney(totalUSD, 'USD')}</span>
+        </div>
+      </div>
+
       <div className="cards">
         <div className="card">
           <h3>{t('crcOwed')}</h3>
@@ -143,10 +152,6 @@ export default function CreditCards({ state, update, t }: Props) {
         <div className="card">
           <h3>{t('usdOwed')}</h3>
           <div className="value negative">{formatMoney(totalUSD, 'USD')}</div>
-        </div>
-        <div className="card">
-          <h3>{t('combinedTotal', { cur: state.primaryCurrency })}</h3>
-          <div className="value negative">{formatMoney(combined, state.primaryCurrency)}</div>
         </div>
       </div>
 

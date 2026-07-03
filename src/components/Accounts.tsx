@@ -42,6 +42,15 @@ export default function Accounts({ state, update, t }: Props) {
       <h2>{t('accountsTitle')}</h2>
       <p className="muted">{t('accountsIntro')}</p>
 
+      <div className="hero">
+        <div className="hero-label">{t('combinedTotal', { cur: state.primaryCurrency })}</div>
+        <div className="hero-value">{formatMoney(combined, state.primaryCurrency)}</div>
+        <div className="hero-sub" style={{ marginTop: 12 }}>
+          <span>{formatMoney(totalCRC, 'CRC')}</span>
+          <span>{formatMoney(totalUSD, 'USD')}</span>
+        </div>
+      </div>
+
       <div className="cards">
         <div className="card">
           <h3>{t('crcTotal')}</h3>
@@ -50,10 +59,6 @@ export default function Accounts({ state, update, t }: Props) {
         <div className="card">
           <h3>{t('usdTotal')}</h3>
           <div className="value">{formatMoney(totalUSD, 'USD')}</div>
-        </div>
-        <div className="card">
-          <h3>{t('combinedTotal', { cur: state.primaryCurrency })}</h3>
-          <div className="value">{formatMoney(combined, state.primaryCurrency)}</div>
         </div>
       </div>
 
@@ -88,10 +93,14 @@ export default function Accounts({ state, update, t }: Props) {
               {state.accounts.map((a) => (
                 <tr key={a.id}>
                   <td data-label={t('name')}>
-                    <input
-                      value={a.name}
-                      onChange={(e) => updateAccount(a.id, { name: e.target.value })}
-                    />
+                    <span className="row" style={{ flex: 1, minWidth: 0 }}>
+                      <span className="currency-badge">{a.currency === 'USD' ? '$' : '₡'}</span>
+                      <input
+                        value={a.name}
+                        onChange={(e) => updateAccount(a.id, { name: e.target.value })}
+                        style={{ flex: 1, minWidth: 0 }}
+                      />
+                    </span>
                   </td>
                   <td data-label={t('balance')}>
                     <input

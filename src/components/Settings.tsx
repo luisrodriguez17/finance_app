@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { AppState, Currency, Language, SalarySchedule } from '../types';
+import type { AppState, Currency, Language, SalarySchedule, Theme } from '../types';
 import { markPastAsApplied, applyDueSalaries } from '../store';
 import type { T } from '../i18n';
 
@@ -64,6 +64,24 @@ export default function Settings({ state, update, t }: Props) {
   return (
     <div>
       <h2>{t('settings')}</h2>
+
+      <div className="section">
+        <h3>{t('appearance')}</h3>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <span className="muted">{t('theme')}</span>
+          <label className="row" style={{ cursor: 'pointer' }}>
+            <span className="muted">{state.theme === 'dark' ? t('themeDark') : t('themeLight')}</span>
+            <input
+              type="checkbox"
+              className="checkbox"
+              checked={state.theme === 'light'}
+              onChange={(e) =>
+                update((s) => ({ ...s, theme: (e.target.checked ? 'light' : 'dark') as Theme }))
+              }
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="section">
         <h3>{t('language')}</h3>

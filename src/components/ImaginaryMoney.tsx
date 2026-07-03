@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AppState, ImaginaryEntry } from '../types';
-import { formatMoney, uid, convert } from '../utils';
+import { formatMoney, uid, convert, initials } from '../utils';
 import type { T } from '../i18n';
 
 type Props = {
@@ -54,6 +54,16 @@ export default function ImaginaryMoney({ state, update, t }: Props) {
       <h2>{t('imaginaryTitle')}</h2>
       <p className="muted">{t('imaginaryIntro')}</p>
 
+      <div className="hero">
+        <div className="hero-label">{t('combinedTotal', { cur: state.primaryCurrency })}</div>
+        <div className="hero-value" style={{ color: 'var(--accent)' }}>
+          {formatMoney(owedCombined, state.primaryCurrency)}
+        </div>
+        <div className="muted" style={{ marginTop: 8, fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
+          {formatMoney(owedCRC, 'CRC')} · {formatMoney(owedUSD, 'USD')} · {t('pendingCount', { n: pending.length })}
+        </div>
+      </div>
+
       <div className="cards">
         <div className="card">
           <h3>{t('crcOutstanding')}</h3>
@@ -62,11 +72,6 @@ export default function ImaginaryMoney({ state, update, t }: Props) {
         <div className="card">
           <h3>{t('usdOutstanding')}</h3>
           <div className="value positive">{formatMoney(owedUSD, 'USD')}</div>
-        </div>
-        <div className="card">
-          <h3>{t('combinedTotal', { cur: state.primaryCurrency })}</h3>
-          <div className="value positive">{formatMoney(owedCombined, state.primaryCurrency)}</div>
-          <div className="sub">{t('pendingCount', { n: pending.length })}</div>
         </div>
       </div>
 
@@ -102,10 +107,14 @@ export default function ImaginaryMoney({ state, update, t }: Props) {
               {state.imaginary.map((e) => (
                 <tr key={e.id} style={{ opacity: e.collected ? 0.5 : 1 }}>
                   <td data-label={t('person')}>
-                    <input
-                      value={e.personName}
-                      onChange={(ev) => updateEntry(e.id, { personName: ev.target.value })}
-                    />
+                    <span className="row" style={{ flex: 1, minWidth: 0 }}>
+                      <span className="avatar-badge">{initials(e.personName)}</span>
+                      <input
+                        value={e.personName}
+                        onChange={(ev) => updateEntry(e.id, { personName: ev.target.value })}
+                        style={{ flex: 1, minWidth: 0 }}
+                      />
+                    </span>
                   </td>
                   <td data-label="₡ CRC">
                     <input
