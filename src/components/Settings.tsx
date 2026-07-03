@@ -278,7 +278,18 @@ function SalaryScheduleSection({ state, update, t }: Props) {
             ))}
           </select>
         </div>
+
+        <label className="row" style={{ cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            className="checkbox"
+            checked={s.fundsNextMonth ?? false}
+            onChange={(e) => patch({ fundsNextMonth: e.target.checked })}
+          />
+          <span>{t('fundsNextMonth')}</span>
+        </label>
       </div>
+      <p className="muted" style={{ marginTop: 4 }}>{t('fundsNextMonthHelp')}</p>
 
       <div className="row" style={{ marginTop: 12 }}>
         <button className="primary" onClick={runNow} disabled={!s.enabled}>

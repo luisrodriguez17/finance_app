@@ -5,6 +5,12 @@ export const uid = () => Math.random().toString(36).slice(2, 10);
 export const monthKey = (d: Date = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
+/** The YYYY-MM key immediately following the given one. */
+export const nextMonthKey = (key: string) => {
+  const [y, m] = key.split('-').map(Number);
+  return monthKey(new Date(y, m, 1));
+};
+
 /** Difference in months between two YYYY-MM keys (a - b). */
 export const monthDiff = (a: string, b: string) => {
   const [ay, am] = a.split('-').map(Number);

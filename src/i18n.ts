@@ -245,6 +245,9 @@ const en: Dict = {
     "Day 31 always means the last day of each month (handles 28/29/30/31-day months). When salary is in a different currency than the linked account, the deposit is added to the month's salary but the account balance isn't touched.",
   confirmResetHistory:
     'Clear applied history? Any future check on app load may re-apply past salary dates.',
+  fundsNextMonth: 'This paycheck funds next month’s budget',
+  fundsNextMonthHelp:
+    'Enable this if you get paid near month-end (e.g. the 28th) for money that covers the following month’s bills — the deposit will be recorded under next month instead of the current one.',
 };
 
 const es: Dict = {
@@ -491,6 +494,9 @@ const es: Dict = {
     'El día 31 siempre significa el último día del mes (maneja meses de 28/29/30/31 días). Cuando el salario está en moneda distinta a la cuenta vinculada, el depósito se agrega al salario del mes pero no se toca el balance de la cuenta.',
   confirmResetHistory:
     '¿Limpiar el historial aplicado? Cualquier carga futura puede re-aplicar fechas de salario pasadas.',
+  fundsNextMonth: 'Este pago financia el presupuesto del mes siguiente',
+  fundsNextMonthHelp:
+    'Actívelo si le pagan cerca de fin de mes (p. ej. el día 28) y ese dinero cubre los gastos del mes siguiente — el depósito se registrará en el mes siguiente en lugar del actual.',
 };
 
 const dicts: Record<Language, Dict> = { en, es };
