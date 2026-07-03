@@ -20,6 +20,36 @@ import {
 
 const COLORS = ['#4f7cff', '#4ade80', '#f59e0b', '#f87171', '#a78bfa', '#22d3ee', '#fb7185', '#facc15'];
 
+const RADIAN = Math.PI / 180;
+// Recharts' default pie `label` places text at a fixed offset outside the slice with a
+// connector line; with many categories on a narrow screen those labels collide and overlap.
+// Rendering the percentage inside the slice instead (and skipping slivers) keeps it legible on mobile.
+function renderPieLabel({
+  cx = 0,
+  cy = 0,
+  midAngle = 0,
+  innerRadius = 0,
+  outerRadius = 0,
+  percent = 0,
+}: {
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+}) {
+  if (percent < 0.05) return null;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text x={x} y={y} fill="#0b0d12" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+      {`${Math.round(percent * 100)}%`}
+    </text>
+  );
+}
+
 type BillWithMonth = Bill & { monthKey: string };
 
 export default function Analytics({ state, t }: { state: AppState; t: T }) {
@@ -232,8 +262,9 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
                   data={categoryTotals}
                   dataKey="value"
                   nameKey="name"
-                  outerRadius={120}
-                  label
+                  outerRadius="70%"
+                  label={renderPieLabel}
+                  labelLine={false}
                   onClick={(d: { name?: string }) => {
                     if (d?.name) setSelectedCategory((prev) => (prev === d.name ? null : d.name!));
                   }}
