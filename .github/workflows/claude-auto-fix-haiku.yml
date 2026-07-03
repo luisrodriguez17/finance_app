@@ -46,4 +46,8 @@ jobs:
             If the issue is unclear or you cannot safely resolve it, leave a comment on the
             issue explaining why instead of opening a PR.
 
-          claude_args: '--model claude-haiku-4-5-20251001'
+          # bypassPermissions: this runs headless with no human to approve each Bash
+          # call, so the default interactive permission mode denies everything.
+          # Scope of what it can do is bounded by the job's GITHUB_TOKEN permissions
+          # above (no admin, no extra secrets).
+          claude_args: '--model claude-haiku-4-5-20251001 --permission-mode bypassPermissions'
