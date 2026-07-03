@@ -46,4 +46,4 @@ jobs:
             If the issue is unclear or you cannot safely resolve it, leave a comment on the
             issue explaining why instead of opening a PR.
 
-          claude_args: '--model claude-haiku-4-5-20251001 --allowed-tools "Bash(git *),Bash(gh pr *)"'
+          claude_args: '--model claude-haiku-4-5-20251001'

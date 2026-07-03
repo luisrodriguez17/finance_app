@@ -45,4 +45,4 @@ jobs:
             If the issue is unclear or you cannot safely resolve it, leave a comment on the
             issue explaining why instead of opening a PR.
 
-          claude_args: '--model claude-sonnet-5 --allowed-tools "Bash(git *),Bash(gh pr *)"'
+          claude_args: '--model claude-sonnet-5'
