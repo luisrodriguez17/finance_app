@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { AppState, MonthSnapshot, Subscription } from './types';
-import { monthKey, monthDiff } from './utils';
+import { monthKey, monthDiff, nextMonthKey } from './utils';
 
 const STORAGE_KEY = 'finance-app-state-v1';
 
@@ -27,6 +27,7 @@ const defaultState: AppState = {
     day1: 15,
     day2: undefined,
     accountId: undefined,
+    fundsNextMonth: false,
     appliedDates: [],
   },
 };
@@ -192,7 +193,7 @@ export function applyDueSalaries(state: AppState, today: Date = new Date()): App
 
   let next = state;
   for (const iso of toApply) {
-    const mKey = iso.slice(0, 7);
+    const mKey = schedule.fundsNextMonth ? nextMonthKey(iso.slice(0, 7)) : iso.slice(0, 7);
     next = ensureMonth(next, mKey);
     const m = next.months[mKey];
 

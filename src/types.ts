@@ -92,6 +92,9 @@ export interface SalarySchedule {
   day2?: number;
   /** Optional account to deposit into when due. */
   accountId?: string;
+  /** If true, a paycheck is credited to the month AFTER its calendar date (e.g. a check
+   *  received May 28 funds June's budget rather than May's). */
+  fundsNextMonth?: boolean;
   /** ISO YYYY-MM-DD dates that have already been applied. */
   appliedDates: string[];
 }
