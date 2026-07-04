@@ -63,6 +63,10 @@ const en: Dict = {
   outstandingPeopleOweYou: 'Outstanding (people owe you)',
   includeImgInProjection: 'Include imaginary money in projection',
   peopleWhoOweYou: 'People who owe you',
+  moreInfo: 'More info',
+  viewDetails: 'View details',
+  countAsAvailable: 'Count as available',
+  creditCardLabel: 'DEBT CARD',
 
   // Accounts
   accountsTitle: 'Accounts',
@@ -327,6 +331,10 @@ const es: Dict = {
   outstandingPeopleOweYou: 'Pendiente (le deben a usted)',
   includeImgInProjection: 'Incluir dinero por cobrar en la proyección',
   peopleWhoOweYou: 'Personas que le deben',
+  moreInfo: 'Más información',
+  viewDetails: 'Ver detalles',
+  countAsAvailable: 'Contar como disponible',
+  creditCardLabel: 'TARJETA DE DEUDA',
 
   // Accounts
   accountsTitle: 'Cuentas',

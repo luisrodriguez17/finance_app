@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { AppState, MonthSnapshot } from '../types';
+import type { Tab } from '../App';
 import { formatMoney, convert, initials } from '../utils';
 import { computeReserve } from './Budget';
 import type { T } from '../i18n';
@@ -9,9 +10,69 @@ type Props = {
   month: MonthSnapshot;
   update: (u: (s: AppState) => AppState) => void;
   t: T;
+  navigate: (tab: Tab) => void;
 };
 
-export default function Dashboard({ state, month, update, t }: Props) {
+/** Small "i" button that reveals a bit of explanatory text on tap, keeping the
+ *  card visually clean until the user asks for detail. */
+function InfoTip({ text, label }: { text: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="infotip">
+      <button
+        type="button"
+        className="infotip-btn"
+        aria-label={label}
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        i
+      </button>
+      {open && (
+        <span className="infotip-bubble" onClick={(e) => e.stopPropagation()}>
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Chevron affordance shown on tappable cards/sections that navigate elsewhere. */
+function GoArrow() {
+  return (
+    <svg className="go-arrow" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 6 15 12 9 18" />
+    </svg>
+  );
+}
+
+/** A tappable stat card that navigates to a related view. */
+function NavCard({
+  onClick,
+  title,
+  children,
+  className = '',
+}: {
+  onClick: () => void;
+  title: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button type="button" className={`card clickable ${className}`} onClick={onClick}>
+      <h3>
+        {title}
+        <GoArrow />
+      </h3>
+      {children}
+    </button>
+  );
+}
+
+export default function Dashboard({ state, month, update, t, navigate }: Props) {
   const [showEmergency, setShowEmergency] = useState(false);
 
   const toggleCC = () =>
@@ -100,27 +161,24 @@ export default function Dashboard({ state, month, update, t }: Props) {
         <div className="muted" style={{ marginTop: 8, fontSize: '0.72rem' }}>{t('rateNote', { rate })}</div>
       </div>
 
-      <div className="cards">
-        <div className="card">
-          <h3>{t('salary')}</h3>
-          <div className="value">{formatMoney(month.salary.amount, month.salary.currency)}</div>
-          <div className="sub">≈ {formatMoney(salaryPrimary, primary)}</div>
-        </div>
-
-        <div className="card">
-          <h3>{t('totalBalance')}</h3>
-          <div className="value">{formatMoney(balanceCombined, primary)}</div>
-          <div className="sub">
-            {formatMoney(balanceCRC, 'CRC')} · {formatMoney(balanceUSD, 'USD')}
-          </div>
-        </div>
-
-        <div className="card">
-          <h3>{t('totalBills')}</h3>
+      <div className="cards dash-grid">
+        <NavCard onClick={() => navigate('bills')} title={t('totalBills')}>
           <div className="value">{formatMoney(totalBillsCombined, primary)}</div>
           <div className="sub">
             {formatMoney(totalBillsCRC, 'CRC')} · {formatMoney(totalBillsUSD, 'USD')}
           </div>
+        </NavCard>
+
+        <NavCard onClick={() => navigate('accounts')} title={t('totalBalance')}>
+          <div className="value">{formatMoney(balanceCombined, primary)}</div>
+          <div className="sub">
+            {formatMoney(balanceCRC, 'CRC')} · {formatMoney(balanceUSD, 'USD')}
+          </div>
+        </NavCard>
+
+        <div className="card">
+          <h3>{t('remainingUSD')}</h3>
+          <div className={`value ${heroUSD < 0 ? 'negative' : 'positive'}`}>{formatMoney(heroUSD, 'USD')}</div>
         </div>
 
         <div className="card">
@@ -128,16 +186,68 @@ export default function Dashboard({ state, month, update, t }: Props) {
           <div className={`value ${heroCRC < 0 ? 'negative' : 'positive'}`}>{formatMoney(heroCRC, 'CRC')}</div>
         </div>
 
-        <div className="card">
-          <h3>{t('remainingUSD')}</h3>
-          <div className={`value ${heroUSD < 0 ? 'negative' : 'positive'}`}>{formatMoney(heroUSD, 'USD')}</div>
-        </div>
+        <button
+          type="button"
+          className="card clickable salary-card span-2"
+          onClick={() => navigate('budget')}
+        >
+          <div>
+            <h3>
+              {t('salary')}
+              <GoArrow />
+            </h3>
+            <div className="sub">≈ {formatMoney(salaryPrimary, primary)}</div>
+          </div>
+          <div className="value">{formatMoney(month.salary.amount, month.salary.currency)}</div>
+        </button>
       </div>
 
+      {/* Credit card debt — styled to look like a physical card */}
+      <div
+        className={`credit-card ${state.includeCreditCardInBills ? 'included' : ''}`}
+        role="button"
+        tabIndex={0}
+        onClick={() => navigate('cards')}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && navigate('cards')}
+      >
+        <div className="credit-card-sheen" />
+        <div className="credit-card-top">
+          <span className="credit-card-chip" />
+          <span className="credit-card-brand">{t('creditCardLabel')}</span>
+        </div>
+        <div className="credit-card-number">•••• •••• •••• ••••</div>
+        <div className="credit-card-bottom">
+          <div>
+            <div className="credit-card-label">{t('totalOwedAcrossCards')}</div>
+            <div className="credit-card-amount">
+              {formatMoney(ccCRC, 'CRC')} · {formatMoney(ccUSD, 'USD')}
+            </div>
+          </div>
+          <GoArrow />
+        </div>
+      </div>
+      <label className="toggle-row" onClick={(e) => e.stopPropagation()}>
+        <span>{t('includeCcInBills')}</span>
+        <input
+          type="checkbox"
+          className="checkbox"
+          checked={state.includeCreditCardInBills}
+          onChange={toggleCC}
+        />
+      </label>
+
+      {/* Savings reserves */}
       <div className="section">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0 }}>{t('savingsReserves')}</h3>
-          <label className="row" style={{ cursor: 'pointer' }}>
+          <div className="row" style={{ gap: 6 }}>
+            <h3 className="section-link" onClick={() => navigate('budget')} style={{ margin: 0 }}>
+              {t('savingsReserves')}
+              <GoArrow />
+            </h3>
+            <InfoTip text={t('reservesInfo')} label={t('moreInfo')} />
+          </div>
+          <label className="row" style={{ cursor: 'pointer' }} title={t('showEmergencyView')}>
+            <span className="muted" style={{ fontSize: '0.72rem' }}>{t('countAsAvailable')}</span>
             <input
               type="checkbox"
               className="checkbox"
@@ -150,32 +260,15 @@ export default function Dashboard({ state, month, update, t }: Props) {
         <div style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'var(--font-mono)', marginTop: 6 }}>
           {formatMoney(reservedCRC, 'CRC')} · {formatMoney(reservedUSD, 'USD')}
         </div>
-        <div className="muted" style={{ marginTop: 6 }}>
-          {t('showEmergencyView')}
-        </div>
-        <p className="muted" style={{ marginTop: 8 }}>{t('reservesInfo')}</p>
       </div>
 
+      {/* Imaginary money */}
       <div className="section">
         <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0 }}>{t('creditCardDebt')}</h3>
-          <input
-            type="checkbox"
-            className="checkbox"
-            checked={state.includeCreditCardInBills}
-            onChange={toggleCC}
-          />
-        </div>
-        <div className="muted" style={{ marginTop: 2 }}>{t('totalOwedAcrossCards')}</div>
-        <div style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'var(--font-mono)', marginTop: 6 }}>
-          {formatMoney(ccCRC, 'CRC')} · {formatMoney(ccUSD, 'USD')}
-        </div>
-        <div className="muted" style={{ marginTop: 6 }}>{t('includeCcInBills')}</div>
-      </div>
-
-      <div className="section">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0 }}>{t('imaginaryMoney')}</h3>
+          <h3 className="section-link" onClick={() => navigate('imaginary')} style={{ margin: 0 }}>
+            {t('imaginaryMoney')}
+            <GoArrow />
+          </h3>
           <input
             type="checkbox"
             className="checkbox"
