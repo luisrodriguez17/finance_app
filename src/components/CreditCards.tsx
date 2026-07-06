@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import type { AppState, Bill, CreditCard } from '../types';
+import type { AppState, CreditCard } from '../types';
 import { formatMoney, uid, convert } from '../utils';
-import { currentMonthKey, ensureMonth } from '../store';
 import type { T } from '../i18n';
 import { AddToggle, EntryItem, Field } from './ui';
 
@@ -102,54 +101,17 @@ export default function CreditCards({ state, update, t }: Props) {
     const deltaCRC = Number(realCRC) - currentCRC;
     const deltaUSD = Number(realUSD) - currentUSD;
 
-    const category = state.categories.includes('Other')
-      ? 'Other'
-      : state.categories[0] || 'Other';
-
-    const offsets: Bill[] = [];
-    if (Math.abs(deltaCRC) > 0.001) {
-      offsets.push({
-        id: uid(),
-        name: `Offset (${c.name})`,
-        amount: deltaCRC,
-        currency: 'CRC',
-        category,
-        source: 'manual',
-        creditCardId: c.id,
-        paid: false,
-      });
-    }
-    if (Math.abs(deltaUSD) > 0.001) {
-      offsets.push({
-        id: uid(),
-        name: `Offset (${c.name})`,
-        amount: deltaUSD,
-        currency: 'USD',
-        category,
-        source: 'manual',
-        creditCardId: c.id,
-        paid: false,
-      });
-    }
-
-    if (offsets.length === 0) {
+    if (Math.abs(deltaCRC) < 0.001 && Math.abs(deltaUSD) < 0.001) {
       cancelCorrection();
       return;
     }
 
-    update((s) => {
-      const key = currentMonthKey();
-      const ensured = ensureMonth(s, key);
-      return {
-        ...ensured,
-        months: {
-          ...ensured.months,
-          [key]: {
-            ...ensured.months[key],
-            bills: [...ensured.months[key].bills, ...offsets],
-          },
-        },
-      };
+    // Absorb the difference into the card's manual debt so the card total lands
+    // exactly on the real value. This keeps bills already assigned to the card
+    // intact and avoids polluting the Bills list with a confusing offset entry.
+    updateCard(c.id, {
+      owedCRC: c.owedCRC + deltaCRC,
+      owedUSD: c.owedUSD + deltaUSD,
     });
     cancelCorrection();
   };
@@ -311,7 +273,7 @@ export default function CreditCards({ state, update, t }: Props) {
                       {isCorrecting ? (
                         <>
                           <button className="ghost" onClick={cancelCorrection}>{t('cancel')}</button>
-                          <button className="primary" onClick={() => applyCorrection(c)}>{t('createOffset')}</button>
+                          <button className="primary" onClick={() => applyCorrection(c)}>{t('applyCorrection')}</button>
                         </>
                       ) : isPaying ? (
                         <>
