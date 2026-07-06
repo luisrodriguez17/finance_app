@@ -23,6 +23,10 @@ export default function CreditCards({ state, update, t }: Props) {
   const [realCRC, setRealCRC] = useState('');
   const [realUSD, setRealUSD] = useState('');
 
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payCurrency, setPayCurrency] = useState<'CRC' | 'USD'>('CRC');
+
   const add = () => {
     if (!name) return;
     const card: CreditCard = {
@@ -65,6 +69,31 @@ export default function CreditCards({ state, update, t }: Props) {
     setCorrectingId(null);
     setRealCRC('');
     setRealUSD('');
+  };
+
+  const startPayment = (c: CreditCard) => {
+    setPayingId(c.id);
+    setPayAmount('');
+    setPayCurrency(c.owedCRC === 0 && c.owedUSD !== 0 ? 'USD' : 'CRC');
+  };
+
+  const cancelPayment = () => {
+    setPayingId(null);
+    setPayAmount('');
+  };
+
+  const applyPayment = (c: CreditCard) => {
+    const value = Number(payAmount);
+    if (!value) {
+      cancelPayment();
+      return;
+    }
+    if (payCurrency === 'CRC') {
+      updateCard(c.id, { owedCRC: c.owedCRC - value });
+    } else {
+      updateCard(c.id, { owedUSD: c.owedUSD - value });
+    }
+    cancelPayment();
   };
 
   const applyCorrection = (c: CreditCard) => {
@@ -185,6 +214,7 @@ export default function CreditCards({ state, update, t }: Props) {
                 const isCorrecting = correctingId === c.id;
                 const previewDeltaCRC = isCorrecting ? Number(realCRC) - totalCardCRC : 0;
                 const previewDeltaUSD = isCorrecting ? Number(realUSD) - totalCardUSD : 0;
+                const isPaying = payingId === c.id;
                 return (
                   <EntryItem
                     key={c.id}
@@ -260,14 +290,37 @@ export default function CreditCards({ state, update, t }: Props) {
                       </>
                     )}
 
+                    {isPaying && (
+                      <>
+                        <p className="muted" style={{ marginBottom: 0 }}>{t('paymentPrompt')}</p>
+                        <div className="field-grid">
+                          <Field label={t('amount')}>
+                            <input type="number" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
+                          </Field>
+                          <Field label={t('currency')}>
+                            <select value={payCurrency} onChange={(e) => setPayCurrency(e.target.value as 'CRC' | 'USD')}>
+                              <option value="CRC">₡ CRC</option>
+                              <option value="USD">$ USD</option>
+                            </select>
+                          </Field>
+                        </div>
+                      </>
+                    )}
+
                     <div className="entry-actions">
                       {isCorrecting ? (
                         <>
                           <button className="ghost" onClick={cancelCorrection}>{t('cancel')}</button>
                           <button className="primary" onClick={() => applyCorrection(c)}>{t('createOffset')}</button>
                         </>
+                      ) : isPaying ? (
+                        <>
+                          <button className="ghost" onClick={cancelPayment}>{t('cancel')}</button>
+                          <button className="primary" onClick={() => applyPayment(c)}>{t('makePayment')}</button>
+                        </>
                       ) : (
                         <>
+                          <button className="ghost" onClick={() => startPayment(c)}>{t('pay')}</button>
                           <button className="ghost" onClick={() => startCorrection(c)}>{t('correct')}</button>
                           <button className="danger" onClick={() => remove(c.id)}>{t('remove')}</button>
                         </>
@@ -278,6 +331,7 @@ export default function CreditCards({ state, update, t }: Props) {
               })}
             </div>
             <p className="muted" style={{ marginTop: 10 }}>{t('cardsHelp')}</p>
+            <p className="muted">{t('paymentHelp')}</p>
             <p className="muted">{t('correctHelp')}</p>
           </>
         )}
