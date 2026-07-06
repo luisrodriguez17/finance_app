@@ -75,18 +75,31 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
 
   const monthly = useMemo(() => {
     const keys = Object.keys(state.months).sort();
-    return keys.map((k) => {
+    // Savings accumulate: each month's leftover carries into the running total shown on
+    // the "net savings over time" chart, rather than resetting to just that month's net.
+    return keys.reduce<Array<{
+      key: string;
+      label: string;
+      salary: number;
+      bills: number;
+      net: number;
+      cumulativeNet: number;
+    }>>((acc, k) => {
       const m = state.months[k];
       const bills = m.bills.reduce((s, b) => s + convert(b.amount, b.currency, primary, rate), 0);
       const salary = convert(m.salary.amount, m.salary.currency, primary, rate);
-      return {
+      const net = salary - bills;
+      const prevCumulative = acc.length ? acc[acc.length - 1].cumulativeNet : 0;
+      acc.push({
         key: k,
         label: monthLabel(k),
         salary: Math.round(salary),
         bills: Math.round(bills),
-        net: Math.round(salary - bills),
-      };
-    });
+        net: Math.round(net),
+        cumulativeNet: Math.round(prevCumulative + net),
+      });
+      return acc;
+    }, []);
   }, [state, primary, rate]);
 
   const filteredMonthly = useMemo(
@@ -239,7 +252,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
                 contentStyle={tooltipStyle}
                 formatter={(v: unknown) => formatMoney(Number(v), primary)}
               />
-              <Line type="monotone" dataKey="net" stroke={chartAccent} strokeWidth={2} />
+              <Line type="monotone" dataKey="cumulativeNet" stroke={chartAccent} strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         )}
