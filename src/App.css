@@ -838,6 +838,20 @@ td select {
 
 .search-input { width: 100%; margin-bottom: 10px; }
 
+/* Subtle "possible duplicate amount" hint - a small dot, not an alarming badge */
+.dup-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+  opacity: 0.8;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.dup-note { font-size: 0.78rem; margin: 8px 0 0; }
+.dup-note::before { content: '● '; color: var(--warn); opacity: 0.8; }
+
 .chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .chip {
   background: transparent;

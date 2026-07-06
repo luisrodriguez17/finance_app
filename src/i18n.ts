@@ -121,6 +121,7 @@ const en: Dict = {
   subscriptionsCount: '{n} subscriptions',
   activeCount: '{n} active',
   searchBillsPlaceholder: 'Search bills…',
+  duplicateAmountWarning: 'Another bill this month has the exact same amount — worth a quick check that this isn\'t a duplicate.',
 
   // Credit Cards
   cardsTitle: 'Credit Cards',
@@ -397,6 +398,7 @@ const es: Dict = {
   subscriptionsCount: '{n} suscripciones',
   activeCount: '{n} activas',
   searchBillsPlaceholder: 'Buscar gastos…',
+  duplicateAmountWarning: 'Otro gasto de este mes tiene exactamente el mismo monto — vale la pena revisar que no sea un duplicado.',
 
   // Credit Cards
   cardsTitle: 'Tarjetas de Crédito',

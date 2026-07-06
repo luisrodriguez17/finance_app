@@ -223,6 +223,7 @@ type BillFilter = 'all' | 'unpaid' | 'paid';
 function MonthBillsSection({ state, month, update, t }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<BillFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -398,13 +399,23 @@ function MonthBillsSection({ state, month, update, t }: Props) {
   const unpaidCount = month.bills.filter((b) => !b.paid).length;
   const paidCount = month.bills.length - unpaidCount;
   const query = search.trim().toLowerCase();
+  const categoriesInMonth = Array.from(new Set(month.bills.map((b) => b.category))).sort();
   const visible = month.bills.filter((b) => {
     if (filter === 'paid' && !b.paid) return false;
     if (filter === 'unpaid' && b.paid) return false;
+    if (categoryFilter && b.category !== categoryFilter) return false;
     if (!query) return true;
     const haystack = [b.name, b.category, targetName(b)].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(query);
   });
+
+  const amountCounts = new Map<string, number>();
+  for (const b of month.bills) {
+    if (!b.amount) continue;
+    const key = `${b.currency}:${b.amount}`;
+    amountCounts.set(key, (amountCounts.get(key) || 0) + 1);
+  }
+  const isDuplicateAmount = (b: Bill) => (amountCounts.get(`${b.currency}:${b.amount}`) || 0) > 1;
 
   return (
     <div className="section">
@@ -473,6 +484,19 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             </button>
           </div>
 
+          {categoriesInMonth.length > 1 && (
+            <select
+              className="search-input"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">{t('allCategoriesOpt')}</option>
+              {categoriesInMonth.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          )}
+
           {visible.length === 0 ? (
             <p className="muted">{t('noBillsMatchFilter')}</p>
           ) : (
@@ -497,7 +521,12 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                   }
                   side={
                     <>
-                      <div className="entry-amount">{formatMoney(b.amount, b.currency)}</div>
+                      <div className="entry-amount">
+                        {isDuplicateAmount(b) && (
+                          <span className="dup-dot" title={t('duplicateAmountWarning')} />
+                        )}
+                        {formatMoney(b.amount, b.currency)}
+                      </div>
                       <input
                         type="checkbox"
                         className="checkbox"
@@ -566,6 +595,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                       />
                     </Field>
                   </div>
+                  {isDuplicateAmount(b) && (
+                    <p className="muted dup-note">{t('duplicateAmountWarning')}</p>
+                  )}
                   <div className="entry-actions">
                     <button className="danger" onClick={() => remove(b.id)}>{t('remove')}</button>
                   </div>
