@@ -215,6 +215,191 @@ h2 {
 .value.positive { color: var(--accent); }
 .value.negative { color: var(--warn); }
 
+/* Dashboard stat grid: fixed 2-up so the layout reads in a stable order,
+   with the salary card stretched full width beneath. */
+.dash-grid { grid-template-columns: 1fr 1fr; }
+.dash-grid .span-2 { grid-column: 1 / -1; }
+
+/* Cards that navigate elsewhere on tap. Reset native <button> styling first. */
+button.card {
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+.card.clickable { transition: border-color 0.15s, transform 0.05s; }
+.card.clickable:hover { border-color: var(--surface-border-strong); }
+.card.clickable:active { transform: scale(0.99); }
+.card.clickable h3 { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+
+.go-arrow {
+  width: 13px;
+  height: 13px;
+  stroke: var(--text-muted);
+  fill: none;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Salary card: full-width horizontal layout */
+.salary-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.salary-card .value { font-size: 1.25rem; }
+.salary-card h3 { margin-bottom: 2px; }
+
+/* Header text that navigates to a full view on tap */
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.section-link .go-arrow { width: 15px; height: 15px; }
+
+/* ===================== Credit card visual ===================== */
+.credit-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  padding: 18px 20px 16px;
+  margin-bottom: 10px;
+  color: oklch(0.97 0.02 280);
+  background: linear-gradient(135deg, oklch(0.42 0.11 285), oklch(0.3 0.08 255) 55%, oklch(0.34 0.09 20));
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  min-height: 168px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.05s;
+}
+.credit-card:active { transform: scale(0.99); }
+.credit-card.included { outline: 2px solid var(--accent); outline-offset: 2px; }
+.credit-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.credit-card-sheen {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 80% at 85% 0%, rgba(255, 255, 255, 0.18), transparent 60%);
+  pointer-events: none;
+}
+
+.credit-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+.credit-card-chip {
+  width: 40px;
+  height: 30px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, oklch(0.86 0.11 90), oklch(0.72 0.13 75));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+.credit-card-chip::after {
+  content: '';
+  position: absolute;
+  inset: 6px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 3px;
+}
+.credit-card-brand {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
+}
+.credit-card-number {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  position: relative;
+  opacity: 0.9;
+}
+.credit-card-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  position: relative;
+}
+.credit-card-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+.credit-card-amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin-top: 3px;
+  word-break: break-word;
+}
+.credit-card .go-arrow { stroke: currentColor; opacity: 0.85; width: 16px; height: 16px; }
+
+/* Standalone toggle row (e.g. "include credit card debt in bills") */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 4px 4px 2px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ===================== Info tooltip ===================== */
+.infotip { position: relative; display: inline-flex; }
+.infotip-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--surface-border-strong);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-size: 0.72rem;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.infotip-btn:hover, .infotip-btn[aria-expanded='true'] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.infotip-bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: min(260px, 78vw);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1px solid var(--surface-border-strong);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 400;
+}
+
 /* ===================== Forms ===================== */
 input, select, textarea {
   background: var(--bg);

@@ -12,7 +12,7 @@ import Analytics from './components/Analytics';
 import Settings from './components/Settings';
 import './App.css';
 
-type Tab =
+export type Tab =
   | 'dashboard'
   | 'accounts'
   | 'bills'
@@ -91,7 +91,7 @@ export default function App() {
         {!month ? (
           <p>{t('loading')}</p>
         ) : tab === 'dashboard' ? (
-          <Dashboard state={state} month={month} update={update} t={t} />
+          <Dashboard state={state} month={month} update={update} t={t} navigate={selectTab} />
         ) : tab === 'accounts' ? (
           <Accounts state={state} update={update} t={t} />
         ) : tab === 'bills' ? (
