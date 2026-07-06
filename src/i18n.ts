@@ -143,8 +143,13 @@ const en: Dict = {
   realCRC: 'Real ₡:',
   realUSD: 'Real $:',
   createOffset: 'Create offset',
+  pay: 'Pay',
+  paymentPrompt: 'Enter the payment amount and currency:',
+  makePayment: 'Make payment',
   cardsHelp:
     '"Manual" is debt you enter directly. "From bills" is the sum of bills you assigned to this card. The card\'s total debt is the sum of both.',
+  paymentHelp:
+    '"Pay" subtracts a payment amount from the manual debt on this card.',
   correctHelp:
     '"Correct" lets you enter the real-world total. The app creates an "Offset" bill (assigned to this card) for the difference in the current month — positive if the real debt is higher, negative if lower.',
 
@@ -413,8 +418,13 @@ const es: Dict = {
   realCRC: 'Real ₡:',
   realUSD: 'Real $:',
   createOffset: 'Crear ajuste',
+  pay: 'Pagar',
+  paymentPrompt: 'Ingrese el monto y la moneda del pago:',
+  makePayment: 'Registrar pago',
   cardsHelp:
     '"Manual" es la deuda que ingresa directamente. "De gastos" es la suma de gastos asignados a esta tarjeta. El total es la suma de ambos.',
+  paymentHelp:
+    '"Pagar" resta el monto del pago de la deuda manual de esta tarjeta.',
   correctHelp:
     '"Corregir" permite ingresar el total real. La app crea un gasto "Ajuste" (asignado a esta tarjeta) con la diferencia en el mes actual — positivo si la deuda real es mayor, negativo si es menor.',
 
