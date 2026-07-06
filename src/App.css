@@ -769,6 +769,20 @@ td select {
   margin-top: 12px;
 }
 
+/* Collapsible header for a whole .section (e.g. Subscriptions tucked under Bills) */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.section-head h3 { margin: 0 0 3px 0; }
+.section-head .chevron { flex-shrink: 0; }
+.section-head.open .chevron { transform: rotate(180deg); }
+.section-body { margin-top: 12px; }
+
 /* Nested rows inside an expanded entry (e.g. one person's debts) */
 .sub-entry {
   border: 1px solid var(--surface-border);

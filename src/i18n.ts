@@ -118,6 +118,8 @@ const en: Dict = {
   inactive: 'Inactive',
   tapToEdit: 'Tap an item to see details and edit it.',
   fromBills: 'From bills',
+  subscriptionsCount: '{n} subscriptions',
+  activeCount: '{n} active',
 
   // Credit Cards
   cardsTitle: 'Credit Cards',
@@ -386,6 +388,8 @@ const es: Dict = {
   inactive: 'Inactiva',
   tapToEdit: 'Toque un elemento para ver detalles y editarlo.',
   fromBills: 'De gastos',
+  subscriptionsCount: '{n} suscripciones',
+  activeCount: '{n} activas',
 
   // Credit Cards
   cardsTitle: 'Tarjetas de Crédito',

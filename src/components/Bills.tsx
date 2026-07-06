@@ -3,7 +3,7 @@ import type { AppState, Bill, Currency, MonthSnapshot, Subscription } from '../t
 import { formatMoney, uid, convert } from '../utils';
 import { ensureMonth } from '../store';
 import type { T } from '../i18n';
-import { AddToggle, EntryItem, Field } from './ui';
+import { AddToggle, CollapsibleSection, EntryItem, Field } from './ui';
 
 type Props = {
   state: AppState;
@@ -564,6 +564,7 @@ function SubscriptionsSection({
   monthKey: string;
   t: T;
 }) {
+  const [open, setOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -624,10 +625,14 @@ function SubscriptionsSection({
     : n === 12 ? t('freqYearly')
     : t('freqMonthly');
 
-  return (
-    <div className="section">
-      <h3>{t('subscriptionsTitle')}</h3>
+  const activeCount = state.subscriptions.filter((s) => s.active).length;
+  const summary =
+    state.subscriptions.length === 0
+      ? t('noSubscriptionsYet')
+      : `${t('subscriptionsCount', { n: state.subscriptions.length })} · ${t('activeCount', { n: activeCount })}`;
 
+  return (
+    <CollapsibleSection title={t('subscriptionsTitle')} summary={summary} open={open} onToggle={() => setOpen((v) => !v)}>
       <AddToggle open={showAdd} label={t('addSubscription')} onClick={() => setShowAdd((v) => !v)} />
       {showAdd && (
         <div className="add-form">
@@ -679,9 +684,7 @@ function SubscriptionsSection({
         </div>
       )}
 
-      {state.subscriptions.length === 0 ? (
-        <p className="muted">{t('noSubscriptionsYet')}</p>
-      ) : (
+      {state.subscriptions.length > 0 && (
         <div className="entry-list">
           {state.subscriptions.map((s) => (
             <EntryItem
@@ -802,6 +805,6 @@ function SubscriptionsSection({
           ))}
         </div>
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
