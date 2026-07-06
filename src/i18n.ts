@@ -274,6 +274,14 @@ const en: Dict = {
   fundsNextMonth: 'This paycheck funds next month’s budget',
   fundsNextMonthHelp:
     'Enable this if you get paid near month-end (e.g. the 28th) for money that covers the following month’s bills — the deposit will be recorded under next month instead of the current one.',
+
+  // Negative offset bill cleanup (one-time migration for the pre-fix credit card correction flow)
+  cleanupTitle: 'Fix old negative correction bills',
+  cleanupFound:
+    '{n} old negative correction bill(s) found across {cards} card(s). Removing them won\'t change any card\'s total debt — only the confusing negative entries disappear from your Bills list.',
+  cleanupButton: 'Clean up now',
+  cleanupConfirm:
+    'Remove {n} old negative correction bill(s)? Each affected card\'s manual debt absorbs the same amount, so its total debt stays exactly the same.',
 };
 
 const es: Dict = {
@@ -549,6 +557,14 @@ const es: Dict = {
   fundsNextMonth: 'Este pago financia el presupuesto del mes siguiente',
   fundsNextMonthHelp:
     'Actívelo si le pagan cerca de fin de mes (p. ej. el día 28) y ese dinero cubre los gastos del mes siguiente — el depósito se registrará en el mes siguiente en lugar del actual.',
+
+  // Limpieza de gastos de ajuste negativos (migración única para el flujo de corrección de tarjeta anterior a la corrección)
+  cleanupTitle: 'Corregir gastos de ajuste negativos antiguos',
+  cleanupFound:
+    'Se encontraron {n} gasto(s) de ajuste negativo antiguo(s) en {cards} tarjeta(s). Eliminarlos no cambiará la deuda total de ninguna tarjeta — solo desaparecerán las entradas negativas confusas de su lista de gastos.',
+  cleanupButton: 'Limpiar ahora',
+  cleanupConfirm:
+    '¿Eliminar {n} gasto(s) de ajuste negativo antiguo(s)? La deuda manual de cada tarjeta afectada absorbe el mismo monto, por lo que su deuda total permanece exactamente igual.',
 };
 
 const dicts: Record<Language, Dict> = { en, es };
