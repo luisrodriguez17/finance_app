@@ -34,6 +34,34 @@ function Chevron() {
   );
 }
 
+/** A `.section` card whose body collapses behind a tappable title + summary. */
+export function CollapsibleSection({
+  title,
+  summary,
+  open,
+  onToggle,
+  children,
+}: {
+  title: ReactNode;
+  summary?: ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="section">
+      <div className={`section-head ${open ? 'open' : ''}`} onClick={onToggle}>
+        <div className="entry-info">
+          <h3>{title}</h3>
+          {summary && <div className="entry-meta">{summary}</div>}
+        </div>
+        <Chevron />
+      </div>
+      {open && <div className="section-body">{children}</div>}
+    </div>
+  );
+}
+
 /** Labeled form control. Uses a div (not label) so composite children with buttons behave. */
 export function Field({
   label,
