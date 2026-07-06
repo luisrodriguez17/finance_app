@@ -224,6 +224,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<BillFilter>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   // Add-form state
   const [name, setName] = useState('');
@@ -233,6 +234,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
   const [creditCardId, setCreditCardId] = useState<string | undefined>(undefined);
   const [accountId, setAccountId] = useState<string | undefined>(undefined);
   const [paid, setPaid] = useState(true);
+  const [date, setDate] = useState('');
 
   const add = () => {
     if (!name || !amount) return;
@@ -247,6 +249,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
       creditCardId,
       accountId,
       paid,
+      date: date || undefined,
       settledFrom: paid && accountId ? { accountId, amount: amt, currency } : undefined,
     };
 
@@ -290,6 +293,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
     setCreditCardId(undefined);
     setAccountId(undefined);
     setPaid(true);
+    setDate('');
     setShowAdd(false);
   };
 
@@ -393,9 +397,14 @@ function MonthBillsSection({ state, month, update, t }: Props) {
 
   const unpaidCount = month.bills.filter((b) => !b.paid).length;
   const paidCount = month.bills.length - unpaidCount;
-  const visible = month.bills.filter((b) =>
-    filter === 'all' ? true : filter === 'paid' ? b.paid : !b.paid
-  );
+  const query = search.trim().toLowerCase();
+  const visible = month.bills.filter((b) => {
+    if (filter === 'paid' && !b.paid) return false;
+    if (filter === 'unpaid' && b.paid) return false;
+    if (!query) return true;
+    const haystack = [b.name, b.category, targetName(b)].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(query);
+  });
 
   return (
     <div className="section">
@@ -426,6 +435,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             <Field label={t('account')}>
               <AccountSelect state={state} value={accountId} disabled={!!creditCardId} onChange={setAccountId} t={t} />
             </Field>
+            <Field label={t('date')}>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
           </div>
           <div className="entry-actions" style={{ justifyContent: 'space-between' }}>
             <label className="row" style={{ cursor: 'pointer' }}>
@@ -442,6 +454,13 @@ function MonthBillsSection({ state, month, update, t }: Props) {
         <p className="muted">{t('noBillsThisMonth')}</p>
       ) : (
         <>
+          <input
+            type="search"
+            className="search-input"
+            placeholder={t('searchBillsPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <div className="chip-row">
             <button className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
               {t('filterAll')} · {month.bills.length}
@@ -472,6 +491,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                           <span className="tag sub">{t('sourceSubscription')}</span>
                         )}
                         {targetName(b) && <span>{targetName(b)}</span>}
+                        {b.date && <span>{b.date}</span>}
                       </div>
                     </>
                   }
@@ -536,6 +556,13 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                         disabled={!!b.creditCardId || b.paid}
                         onChange={(v) => patchBill(b.id, { accountId: v })}
                         t={t}
+                      />
+                    </Field>
+                    <Field label={t('date')}>
+                      <input
+                        type="date"
+                        value={b.date || ''}
+                        onChange={(e) => patchBill(b.id, { date: e.target.value || undefined })}
                       />
                     </Field>
                   </div>

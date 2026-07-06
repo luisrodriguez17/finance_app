@@ -120,6 +120,7 @@ const en: Dict = {
   fromBills: 'From bills',
   subscriptionsCount: '{n} subscriptions',
   activeCount: '{n} active',
+  searchBillsPlaceholder: 'Search bills…',
 
   // Credit Cards
   cardsTitle: 'Credit Cards',
@@ -395,6 +396,7 @@ const es: Dict = {
   fromBills: 'De gastos',
   subscriptionsCount: '{n} suscripciones',
   activeCount: '{n} activas',
+  searchBillsPlaceholder: 'Buscar gastos…',
 
   // Credit Cards
   cardsTitle: 'Tarjetas de Crédito',
