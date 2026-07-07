@@ -203,18 +203,36 @@ function BillsSummary({
   if (month.bills.length === 0) return null;
 
   const primary = state.primaryCurrency;
+  const secondary: Currency = primary === 'CRC' ? 'USD' : 'CRC';
   const rate = state.exchangeRate;
   const sumBy = (bills: Bill[], cur: Currency) =>
     bills.filter((b) => b.currency === cur).reduce((s, b) => s + b.amount, 0);
+  // Only used internally to size the paid-progress bar — never shown as a number,
+  // since blending currencies through an exchange rate into one total is exactly
+  // what made this view confusing.
   const combine = (bills: Bill[]) =>
     convert(sumBy(bills, 'CRC'), 'CRC', primary, rate) +
     convert(sumBy(bills, 'USD'), 'USD', primary, rate);
+  // "₡X" alone, or "₡X · $Y" when both currencies are actually present. The
+  // "· $Y" is kept as one unbreakable unit so a line wrap never orphans the
+  // separator from its amount.
+  const amountLine = (bills: Bill[]) => {
+    const p = sumBy(bills, primary);
+    const s = sumBy(bills, secondary);
+    return (
+      <>
+        {formatMoney(p, primary)}
+        {s !== 0 && <span style={{ whiteSpace: 'nowrap' }}> · {formatMoney(s, secondary)}</span>}
+      </>
+    );
+  };
 
   // Consistent buckets: every bill is either on a card or not, so the two
   // summary cards always add up to the full total.
   const accountBills = month.bills.filter((b) => !b.creditCardId);
   const cardBills = month.bills.filter((b) => b.creditCardId);
   const paidBills = month.bills.filter((b) => b.paid);
+  const unpaidBills = month.bills.filter((b) => !b.paid);
 
   const fullTotal = combine(month.bills);
   const paidTotal = combine(paidBills);
@@ -224,14 +242,19 @@ function BillsSummary({
     <>
       <div className="hero">
         <div className="hero-label">{t('fullTotal')}</div>
-        <div className="hero-value">{formatMoney(fullTotal, primary)}</div>
+        <div className="hero-value">{formatMoney(sumBy(month.bills, primary), primary)}</div>
+        {sumBy(month.bills, secondary) !== 0 && (
+          <div className="hero-value hero-value-secondary">
+            {formatMoney(sumBy(month.bills, secondary), secondary)}
+          </div>
+        )}
         <div className="hero-bar">
           <div style={{ width: `${paidPct}%` }} />
           <div style={{ width: `${100 - paidPct}%` }} />
         </div>
         <div className="hero-sub">
-          <span>{t('alreadyPaid')}: {formatMoney(paidTotal, primary)}</span>
-          <span>{t('remaining')}: {formatMoney(fullTotal - paidTotal, primary)}</span>
+          <span>{t('alreadyPaid')}: {amountLine(paidBills)}</span>
+          <span>{t('remaining')}: {amountLine(unpaidBills)}</span>
         </div>
       </div>
 
@@ -242,7 +265,7 @@ function BillsSummary({
           onClick={() => onSelect('account')}
         >
           <h3>{t('accountBills')}</h3>
-          <div className="value">{formatMoney(combine(accountBills), primary)}</div>
+          <div className="value">{amountLine(accountBills)}</div>
           <div className="sub">{t('billsCount', { n: accountBills.length })} ›</div>
         </button>
         <button
@@ -251,7 +274,7 @@ function BillsSummary({
           onClick={() => onSelect('card')}
         >
           <h3>{t('creditCardBills')}</h3>
-          <div className="value">{formatMoney(combine(cardBills), primary)}</div>
+          <div className="value">{amountLine(cardBills)}</div>
           <div className="sub">{t('billsCount', { n: cardBills.length })} ›</div>
         </button>
       </div>
