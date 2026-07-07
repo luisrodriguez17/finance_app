@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import type { AppState, MonthSnapshot, Subscription } from './types';
+import type { AppState, Bill, MonthSnapshot, Subscription } from './types';
 import { monthKey, monthDiff, nextMonthKey } from './utils';
 
 const STORAGE_KEY = 'finance-app-state-v1';
@@ -229,4 +229,62 @@ export function applyDueSalaries(state: AppState, today: Date = new Date()): App
       appliedDates: Array.from(new Set([...schedule.appliedDates, ...toApply])),
     },
   };
+}
+
+/** A bill created by the pre-fix credit-card "Correct" flow, which added a negative offset bill instead of adjusting the card's manual debt. */
+const isLegacyNegativeOffset = (b: Bill) =>
+  !!b.creditCardId && b.amount < 0 && b.name.startsWith('Offset (');
+
+export interface NegativeOffsetPreview {
+  count: number;
+  totalCRC: number;
+  totalUSD: number;
+  cardCount: number;
+}
+
+export function previewNegativeOffsetCleanup(state: AppState): NegativeOffsetPreview {
+  let count = 0;
+  let totalCRC = 0;
+  let totalUSD = 0;
+  const cardIds = new Set<string>();
+  for (const month of Object.values(state.months)) {
+    for (const b of month.bills) {
+      if (!isLegacyNegativeOffset(b)) continue;
+      count++;
+      cardIds.add(b.creditCardId!);
+      if (b.currency === 'CRC') totalCRC += b.amount;
+      else totalUSD += b.amount;
+    }
+  }
+  return { count, totalCRC, totalUSD, cardCount: cardIds.size };
+}
+
+/**
+ * Removes legacy negative "Offset" bills and folds each one's amount into
+ * that card's manual owed total, so the card's overall debt is unchanged
+ * while the Bills list stops showing the confusing negative entries.
+ */
+export function cleanupNegativeOffsetBills(state: AppState): AppState {
+  const cardDeltas = new Map<string, { crc: number; usd: number }>();
+
+  const months: AppState['months'] = {};
+  for (const [key, month] of Object.entries(state.months)) {
+    const keptBills = month.bills.filter((b) => {
+      if (!isLegacyNegativeOffset(b)) return true;
+      const delta = cardDeltas.get(b.creditCardId!) ?? { crc: 0, usd: 0 };
+      if (b.currency === 'CRC') delta.crc += b.amount;
+      else delta.usd += b.amount;
+      cardDeltas.set(b.creditCardId!, delta);
+      return false;
+    });
+    months[key] = keptBills.length === month.bills.length ? month : { ...month, bills: keptBills };
+  }
+
+  const creditCards = state.creditCards.map((c) => {
+    const delta = cardDeltas.get(c.id);
+    if (!delta) return c;
+    return { ...c, owedCRC: c.owedCRC + delta.crc, owedUSD: c.owedUSD + delta.usd };
+  });
+
+  return { ...state, months, creditCards };
 }

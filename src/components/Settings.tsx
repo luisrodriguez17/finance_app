@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import type { AppState, Currency, Language, SalarySchedule, Theme } from '../types';
-import { markPastAsApplied, applyDueSalaries } from '../store';
+import {
+  markPastAsApplied,
+  applyDueSalaries,
+  previewNegativeOffsetCleanup,
+  cleanupNegativeOffsetBills,
+} from '../store';
+import { formatMoney } from '../utils';
 import type { T } from '../i18n';
 
 type Props = {
@@ -151,6 +157,8 @@ export default function Settings({ state, update, t }: Props) {
       </div>
 
       <SalaryScheduleSection state={state} update={update} t={t} />
+
+      <NegativeOffsetCleanupSection state={state} update={update} t={t} />
 
       <div className="section">
         <h3>{t('backup')}</h3>
@@ -321,6 +329,29 @@ function SalaryScheduleSection({ state, update, t }: Props) {
         </span>
       </div>
       <p className="muted" style={{ marginTop: 8 }}>{t('salaryScheduleHelp')}</p>
+    </div>
+  );
+}
+
+function NegativeOffsetCleanupSection({ state, update, t }: Props) {
+  const preview = previewNegativeOffsetCleanup(state);
+  if (preview.count === 0) return null;
+
+  const apply = () => {
+    if (!window.confirm(t('cleanupConfirm', { n: preview.count }))) return;
+    update((s) => cleanupNegativeOffsetBills(s));
+  };
+
+  return (
+    <div className="section">
+      <h3>{t('cleanupTitle')}</h3>
+      <p className="muted">{t('cleanupFound', { n: preview.count, cards: preview.cardCount })}</p>
+      <p className="muted" style={{ fontFamily: 'var(--font-mono)' }}>
+        {preview.totalCRC !== 0 && formatMoney(preview.totalCRC, 'CRC')}
+        {preview.totalCRC !== 0 && preview.totalUSD !== 0 && ' · '}
+        {preview.totalUSD !== 0 && formatMoney(preview.totalUSD, 'USD')}
+      </p>
+      <button className="primary" onClick={apply}>{t('cleanupButton')}</button>
     </div>
   );
 }
