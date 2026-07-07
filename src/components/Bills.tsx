@@ -105,6 +105,20 @@ function adjustAccount(state: AppState, accountId: string, delta: number): AppSt
   };
 }
 
+/** Add (or refund, with a negative delta) an amount to a card's debt in the given currency. */
+function adjustCard(state: AppState, creditCardId: string, currency: Currency, delta: number): AppState {
+  return {
+    ...state,
+    creditCards: state.creditCards.map((c) =>
+      c.id === creditCardId
+        ? currency === 'CRC'
+          ? { ...c, owedCRC: c.owedCRC + delta }
+          : { ...c, owedUSD: c.owedUSD + delta }
+        : c
+    ),
+  };
+}
+
 function CategorySelect({
   state,
   update,
@@ -189,18 +203,36 @@ function BillsSummary({
   if (month.bills.length === 0) return null;
 
   const primary = state.primaryCurrency;
+  const secondary: Currency = primary === 'CRC' ? 'USD' : 'CRC';
   const rate = state.exchangeRate;
   const sumBy = (bills: Bill[], cur: Currency) =>
     bills.filter((b) => b.currency === cur).reduce((s, b) => s + b.amount, 0);
+  // Only used internally to size the paid-progress bar — never shown as a number,
+  // since blending currencies through an exchange rate into one total is exactly
+  // what made this view confusing.
   const combine = (bills: Bill[]) =>
     convert(sumBy(bills, 'CRC'), 'CRC', primary, rate) +
     convert(sumBy(bills, 'USD'), 'USD', primary, rate);
+  // "₡X" alone, or "₡X · $Y" when both currencies are actually present. The
+  // "· $Y" is kept as one unbreakable unit so a line wrap never orphans the
+  // separator from its amount.
+  const amountLine = (bills: Bill[]) => {
+    const p = sumBy(bills, primary);
+    const s = sumBy(bills, secondary);
+    return (
+      <>
+        {formatMoney(p, primary)}
+        {s !== 0 && <span style={{ whiteSpace: 'nowrap' }}> · {formatMoney(s, secondary)}</span>}
+      </>
+    );
+  };
 
   // Consistent buckets: every bill is either on a card or not, so the two
   // summary cards always add up to the full total.
   const accountBills = month.bills.filter((b) => !b.creditCardId);
   const cardBills = month.bills.filter((b) => b.creditCardId);
   const paidBills = month.bills.filter((b) => b.paid);
+  const unpaidBills = month.bills.filter((b) => !b.paid);
 
   const fullTotal = combine(month.bills);
   const paidTotal = combine(paidBills);
@@ -210,14 +242,19 @@ function BillsSummary({
     <>
       <div className="hero">
         <div className="hero-label">{t('fullTotal')}</div>
-        <div className="hero-value">{formatMoney(fullTotal, primary)}</div>
+        <div className="hero-value">{formatMoney(sumBy(month.bills, primary), primary)}</div>
+        {sumBy(month.bills, secondary) !== 0 && (
+          <div className="hero-value hero-value-secondary">
+            {formatMoney(sumBy(month.bills, secondary), secondary)}
+          </div>
+        )}
         <div className="hero-bar">
           <div style={{ width: `${paidPct}%` }} />
           <div style={{ width: `${100 - paidPct}%` }} />
         </div>
         <div className="hero-sub">
-          <span>{t('alreadyPaid')}: {formatMoney(paidTotal, primary)}</span>
-          <span>{t('remaining')}: {formatMoney(fullTotal - paidTotal, primary)}</span>
+          <span>{t('alreadyPaid')}: {amountLine(paidBills)}</span>
+          <span>{t('remaining')}: {amountLine(unpaidBills)}</span>
         </div>
       </div>
 
@@ -228,7 +265,7 @@ function BillsSummary({
           onClick={() => onSelect('account')}
         >
           <h3>{t('accountBills')}</h3>
-          <div className="value">{formatMoney(combine(accountBills), primary)}</div>
+          <div className="value">{amountLine(accountBills)}</div>
           <div className="sub">{t('billsCount', { n: accountBills.length })} ›</div>
         </button>
         <button
@@ -237,7 +274,7 @@ function BillsSummary({
           onClick={() => onSelect('card')}
         >
           <h3>{t('creditCardBills')}</h3>
-          <div className="value">{formatMoney(combine(cardBills), primary)}</div>
+          <div className="value">{amountLine(cardBills)}</div>
           <div className="sub">{t('billsCount', { n: cardBills.length })} ›</div>
         </button>
       </div>
@@ -287,6 +324,7 @@ function MonthBillsSection({
       paid,
       date: date || undefined,
       settledFrom: paid && accountId ? { accountId, amount: amt, currency } : undefined,
+      chargedTo: paid && creditCardId ? { creditCardId, amount: amt, currency } : undefined,
     };
 
     update((s) => {
@@ -297,7 +335,7 @@ function MonthBillsSection({
             `Account "${acc.name}" is in ${acc.currency} but the bill is in ${currency}. ` +
               `The bill will be added unpaid.`
           );
-          const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined };
+          const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined, chargedTo: undefined };
           return {
             ...s,
             months: {
@@ -312,6 +350,7 @@ function MonthBillsSection({
       }
       let next = s;
       if (paid && accountId) next = adjustAccount(next, accountId, -amt);
+      if (paid && creditCardId) next = adjustCard(next, creditCardId, currency, amt);
       return {
         ...next,
         months: {
@@ -365,6 +404,11 @@ function MonthBillsSection({
           }
           next = adjustAccount(next, bill.accountId, -bill.amount);
         }
+        // Paid on a card bill means the charge actually hit the card: add it to
+        // the card's debt once, with a snapshot so unpaying/removing refunds it.
+        if (bill.creditCardId) {
+          next = adjustCard(next, bill.creditCardId, bill.currency, bill.amount);
+        }
         next = {
           ...next,
           months: {
@@ -379,6 +423,9 @@ function MonthBillsSection({
                       settledFrom: bill.accountId
                         ? { accountId: bill.accountId, amount: bill.amount, currency: bill.currency }
                         : undefined,
+                      chargedTo: bill.creditCardId
+                        ? { creditCardId: bill.creditCardId, amount: bill.amount, currency: bill.currency }
+                        : undefined,
                     }
                   : b
               ),
@@ -389,6 +436,9 @@ function MonthBillsSection({
         if (bill.settledFrom) {
           next = adjustAccount(next, bill.settledFrom.accountId, bill.settledFrom.amount);
         }
+        if (bill.chargedTo) {
+          next = adjustCard(next, bill.chargedTo.creditCardId, bill.chargedTo.currency, -bill.chargedTo.amount);
+        }
         next = {
           ...next,
           months: {
@@ -396,7 +446,7 @@ function MonthBillsSection({
             [month.monthKey]: {
               ...next.months[month.monthKey],
               bills: next.months[month.monthKey].bills.map((b) =>
-                b.id === id ? { ...b, paid: false, settledFrom: undefined } : b
+                b.id === id ? { ...b, paid: false, settledFrom: undefined, chargedTo: undefined } : b
               ),
             },
           },
@@ -411,6 +461,9 @@ function MonthBillsSection({
       let next = s;
       if (bill?.settledFrom) {
         next = adjustAccount(next, bill.settledFrom.accountId, bill.settledFrom.amount);
+      }
+      if (bill?.chargedTo) {
+        next = adjustCard(next, bill.chargedTo.creditCardId, bill.chargedTo.currency, -bill.chargedTo.amount);
       }
       return {
         ...next,
@@ -431,15 +484,18 @@ function MonthBillsSection({
         ? state.accounts.find((a) => a.id === b.accountId)?.name
         : undefined;
 
-  const unpaidCount = month.bills.filter((b) => !b.paid).length;
-  const paidCount = month.bills.length - unpaidCount;
+  // Scope everything (counts, categories, list) to the active assignment
+  // filter so the chips always agree with what a tapped summary card shows.
+  const scoped = month.bills.filter((b) =>
+    assignFilter === 'card' ? !!b.creditCardId : assignFilter === 'account' ? !b.creditCardId : true
+  );
+  const unpaidCount = scoped.filter((b) => !b.paid).length;
+  const paidCount = scoped.length - unpaidCount;
   const query = search.trim().toLowerCase();
-  const categoriesInMonth = Array.from(new Set(month.bills.map((b) => b.category))).sort();
-  const visible = month.bills.filter((b) => {
+  const categoriesInMonth = Array.from(new Set(scoped.map((b) => b.category))).sort();
+  const visible = scoped.filter((b) => {
     if (filter === 'paid' && !b.paid) return false;
     if (filter === 'unpaid' && b.paid) return false;
-    if (assignFilter === 'card' && !b.creditCardId) return false;
-    if (assignFilter === 'account' && b.creditCardId) return false;
     if (categoryFilter && b.category !== categoryFilter) return false;
     if (!query) return true;
     const haystack = [b.name, b.category, targetName(b)].filter(Boolean).join(' ').toLowerCase();
@@ -514,7 +570,7 @@ function MonthBillsSection({
           />
           <div className="chip-row">
             <button className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-              {t('filterAll')} · {month.bills.length}
+              {t('filterAll')} · {scoped.length}
             </button>
             <button className={`chip ${filter === 'unpaid' ? 'active' : ''}`} onClick={() => setFilter('unpaid')}>
               {t('unpaid')} · {unpaidCount}
@@ -599,14 +655,14 @@ function MonthBillsSection({
                       <input
                         type="number"
                         value={b.amount}
-                        disabled={b.paid && !!b.settledFrom}
+                        disabled={b.paid && (!!b.settledFrom || !!b.chargedTo)}
                         onChange={(e) => patchBill(b.id, { amount: Number(e.target.value) })}
                       />
                     </Field>
                     <Field label={t('currency')}>
                       <select
                         value={b.currency}
-                        disabled={b.paid && !!b.settledFrom}
+                        disabled={b.paid && (!!b.settledFrom || !!b.chargedTo)}
                         onChange={(e) => patchBill(b.id, { currency: e.target.value as Currency })}
                       >
                         <option value="CRC">₡ CRC</option>

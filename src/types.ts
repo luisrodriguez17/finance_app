@@ -14,6 +14,8 @@ export interface Bill {
   accountId?: string;
   /** Snapshot of what was deducted from the account when this was paid; used to refund on unpay/remove. */
   settledFrom?: { accountId: string; amount: number; currency: Currency };
+  /** Snapshot of what was added to the card's debt when this was paid; used to refund on unpay/remove. */
+  chargedTo?: { creditCardId: string; amount: number; currency: Currency };
   paid: boolean;
   /** Optional ISO date (YYYY-MM-DD) the bill is due/for. */
   date?: string;

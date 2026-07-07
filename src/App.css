@@ -162,6 +162,11 @@ h2 {
   word-break: break-word;
 }
 .hero-value.negative { color: var(--warn); }
+.hero-value-secondary {
+  font-size: 1.35rem;
+  color: var(--text-muted);
+  margin-top: 0;
+}
 
 .hero-bar {
   display: flex;

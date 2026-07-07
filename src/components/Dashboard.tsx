@@ -100,16 +100,10 @@ export default function Dashboard({ state, month, update, t, navigate }: Props) 
   const billsCRC = directBills.filter((b) => b.currency === 'CRC').reduce((s, b) => s + b.amount, 0);
   const billsUSD = directBills.filter((b) => b.currency === 'USD').reduce((s, b) => s + b.amount, 0);
 
-  // CC debt is global (not month-specific), so sum bills-on-card across all months
-  // to match the Credit Cards tab. Only paid bills count: paid = charged to the card.
-  const allCardBills = Object.values(state.months)
-    .flatMap((m) => m.bills)
-    .filter((b) => b.creditCardId && b.paid);
-  const cardBillsCRC = allCardBills.filter((b) => b.currency === 'CRC').reduce((s, b) => s + b.amount, 0);
-  const cardBillsUSD = allCardBills.filter((b) => b.currency === 'USD').reduce((s, b) => s + b.amount, 0);
-
-  const ccCRC = state.creditCards.reduce((s, c) => s + c.owedCRC, 0) + cardBillsCRC;
-  const ccUSD = state.creditCards.reduce((s, c) => s + c.owedUSD, 0) + cardBillsUSD;
+  // Card debt is tracked directly on each card: marking a card bill paid adds
+  // its amount to the card, so the owed totals are the whole story.
+  const ccCRC = state.creditCards.reduce((s, c) => s + c.owedCRC, 0);
+  const ccUSD = state.creditCards.reduce((s, c) => s + c.owedUSD, 0);
 
   const totalBillsCRC = billsCRC + (state.includeCreditCardInBills ? ccCRC : 0);
   const totalBillsUSD = billsUSD + (state.includeCreditCardInBills ? ccUSD : 0);

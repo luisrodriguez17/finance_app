@@ -154,11 +154,11 @@ const en: Dict = {
   paymentPrompt: 'Enter the payment amount and currency:',
   makePayment: 'Make payment',
   cardsHelp:
-    '"Manual" is debt you enter directly. "From bills" is the sum of paid bills assigned to this card — a bill counts toward the card\'s debt once it is marked paid (i.e. actually charged). The card\'s total debt is the sum of both.',
+    'The totals here are what you owe on each card. Marking a bill paid in Bills adds its amount to the card (unmarking or removing it refunds it).',
   paymentHelp:
-    '"Pay" subtracts a payment amount from the manual debt on this card.',
+    '"Pay" subtracts a payment you made to the card from its debt.',
   correctHelp:
-    '"Correct" lets you enter the real-world total. The app adjusts this card\'s manual debt by the difference so the card total matches — your assigned bills stay untouched and no extra bill is created.',
+    '"Correct" sets the card\'s totals directly — enter the real balances from your bank and the card will match them exactly.',
 
   // Budget
   budgetTitle: 'Budget',
@@ -282,13 +282,13 @@ const en: Dict = {
   fundsNextMonthHelp:
     'Enable this if you get paid near month-end (e.g. the 28th) for money that covers the following month’s bills — the deposit will be recorded under next month instead of the current one.',
 
-  // Negative offset bill cleanup (one-time migration for the pre-fix credit card correction flow)
-  cleanupTitle: 'Fix old negative correction bills',
+  // Offset bill cleanup (one-time migration for the old credit card correction flows)
+  cleanupTitle: 'Remove old correction bills',
   cleanupFound:
-    '{n} old negative correction bill(s) found across {cards} card(s). Removing them won\'t change any card\'s total debt — only the confusing negative entries disappear from your Bills list.',
+    '{n} old "Offset" correction bill(s) found across {cards} card(s). They aren\'t real spending — removing them cleans up your Bills totals and Analytics. Card debt isn\'t affected; use "Correct" on each card afterwards to set its real totals.',
   cleanupButton: 'Clean up now',
   cleanupConfirm:
-    'Remove {n} old negative correction bill(s)? Each affected card\'s manual debt absorbs the same amount, so its total debt stays exactly the same.',
+    'Remove {n} old "Offset" correction bill(s)? Card debt won\'t change — after cleaning, set each card\'s real totals with "Correct".',
 };
 
 const es: Dict = {
@@ -444,11 +444,11 @@ const es: Dict = {
   paymentPrompt: 'Ingrese el monto y la moneda del pago:',
   makePayment: 'Registrar pago',
   cardsHelp:
-    '"Manual" es la deuda que ingresa directamente. "De gastos" es la suma de gastos pagados asignados a esta tarjeta — un gasto cuenta en la deuda de la tarjeta cuando se marca pagado (es decir, ya se cargó). El total es la suma de ambos.',
+    'Los totales aquí son lo que debe en cada tarjeta. Marcar un gasto como pagado en Gastos suma su monto a la tarjeta (desmarcarlo o eliminarlo lo devuelve).',
   paymentHelp:
-    '"Pagar" resta el monto del pago de la deuda manual de esta tarjeta.',
+    '"Pagar" resta de la deuda un pago que usted hizo a la tarjeta.',
   correctHelp:
-    '"Corregir" permite ingresar el total real. La app ajusta la deuda manual de esta tarjeta con la diferencia para que el total coincida — los gastos asignados no se modifican y no se crea ningún gasto adicional.',
+    '"Corregir" fija los totales de la tarjeta directamente — ingrese los saldos reales de su banco y la tarjeta coincidirá exactamente.',
 
   // Budget
   budgetTitle: 'Presupuesto',
@@ -572,13 +572,13 @@ const es: Dict = {
   fundsNextMonthHelp:
     'Actívelo si le pagan cerca de fin de mes (p. ej. el día 28) y ese dinero cubre los gastos del mes siguiente — el depósito se registrará en el mes siguiente en lugar del actual.',
 
-  // Limpieza de gastos de ajuste negativos (migración única para el flujo de corrección de tarjeta anterior a la corrección)
-  cleanupTitle: 'Corregir gastos de ajuste negativos antiguos',
+  // Limpieza de gastos "Offset" (migración única para los flujos antiguos de corrección de tarjeta)
+  cleanupTitle: 'Eliminar gastos de ajuste antiguos',
   cleanupFound:
-    'Se encontraron {n} gasto(s) de ajuste negativo antiguo(s) en {cards} tarjeta(s). Eliminarlos no cambiará la deuda total de ninguna tarjeta — solo desaparecerán las entradas negativas confusas de su lista de gastos.',
+    'Se encontraron {n} gasto(s) "Offset" antiguo(s) en {cards} tarjeta(s). No son gastos reales — eliminarlos limpia sus totales de Gastos y el Análisis. La deuda de las tarjetas no cambia; use "Corregir" en cada tarjeta después para fijar sus totales reales.',
   cleanupButton: 'Limpiar ahora',
   cleanupConfirm:
-    '¿Eliminar {n} gasto(s) de ajuste negativo antiguo(s)? La deuda manual de cada tarjeta afectada absorbe el mismo monto, por lo que su deuda total permanece exactamente igual.',
+    '¿Eliminar {n} gasto(s) "Offset" antiguo(s)? La deuda de las tarjetas no cambia — después de limpiar, fije los totales reales de cada tarjeta con "Corregir".',
 };
 
 const dicts: Record<Language, Dict> = { en, es };

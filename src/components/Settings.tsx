@@ -3,8 +3,8 @@ import type { AppState, Currency, Language, SalarySchedule, Theme } from '../typ
 import {
   markPastAsApplied,
   applyDueSalaries,
-  previewNegativeOffsetCleanup,
-  cleanupNegativeOffsetBills,
+  previewOffsetCleanup,
+  cleanupOffsetBills,
 } from '../store';
 import { formatMoney } from '../utils';
 import type { T } from '../i18n';
@@ -158,7 +158,7 @@ export default function Settings({ state, update, t }: Props) {
 
       <SalaryScheduleSection state={state} update={update} t={t} />
 
-      <NegativeOffsetCleanupSection state={state} update={update} t={t} />
+      <OffsetCleanupSection state={state} update={update} t={t} />
 
       <div className="section">
         <h3>{t('backup')}</h3>
@@ -333,13 +333,13 @@ function SalaryScheduleSection({ state, update, t }: Props) {
   );
 }
 
-function NegativeOffsetCleanupSection({ state, update, t }: Props) {
-  const preview = previewNegativeOffsetCleanup(state);
+function OffsetCleanupSection({ state, update, t }: Props) {
+  const preview = previewOffsetCleanup(state);
   if (preview.count === 0) return null;
 
   const apply = () => {
     if (!window.confirm(t('cleanupConfirm', { n: preview.count }))) return;
-    update((s) => cleanupNegativeOffsetBills(s));
+    update((s) => cleanupOffsetBills(s));
   };
 
   return (
