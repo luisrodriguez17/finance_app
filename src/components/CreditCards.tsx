@@ -50,10 +50,12 @@ export default function CreditCards({ state, update, t }: Props) {
   const remove = (id: string) =>
     update((s) => ({ ...s, creditCards: s.creditCards.filter((c) => c.id !== id) }));
 
+  // Only paid bills count toward the card's debt: paid means the charge has
+  // actually been made to the card. Unpaid card bills are upcoming charges.
   const cardBillsByCard = (cardId: string, currency: 'CRC' | 'USD') =>
     Object.values(state.months)
       .flatMap((m) => m.bills)
-      .filter((b) => b.creditCardId === cardId && b.currency === currency)
+      .filter((b) => b.creditCardId === cardId && b.currency === currency && b.paid)
       .reduce((s, b) => s + b.amount, 0);
 
   const startCorrection = (c: CreditCard) => {

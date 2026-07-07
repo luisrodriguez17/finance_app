@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { AppState, Bill, Currency, MonthSnapshot, Subscription } from '../types';
-import { formatMoney, uid, convert } from '../utils';
+import { formatMoney, uid, convert, categoryColor } from '../utils';
 import { ensureMonth } from '../store';
 import type { T } from '../i18n';
 import { AddToggle, CollapsibleSection, EntryItem, Field } from './ui';
@@ -12,12 +12,31 @@ type Props = {
   t: T;
 };
 
+type AssignFilter = 'all' | 'account' | 'card';
+
 export default function Bills({ state, month, update, t }: Props) {
+  const [assignFilter, setAssignFilter] = useState<AssignFilter>('all');
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const selectAssign = (v: Exclude<AssignFilter, 'all'>) => {
+    setAssignFilter((prev) => (prev === v ? 'all' : v));
+    listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div>
       <h2>{t('billsTitle')}</h2>
-      <BillsSummary state={state} month={month} t={t} />
-      <MonthBillsSection state={state} month={month} update={update} t={t} />
+      <BillsSummary state={state} month={month} t={t} active={assignFilter} onSelect={selectAssign} />
+      <div ref={listRef}>
+        <MonthBillsSection
+          state={state}
+          month={month}
+          update={update}
+          t={t}
+          assignFilter={assignFilter}
+          onClearAssign={() => setAssignFilter('all')}
+        />
+      </div>
       <SubscriptionsSection state={state} update={update} monthKey={month.monthKey} t={t} />
     </div>
   );
@@ -154,33 +173,37 @@ function CategorySelect({
   );
 }
 
-function BillsSummary({ state, month, t }: { state: AppState; month: MonthSnapshot; t: T }) {
+function BillsSummary({
+  state,
+  month,
+  t,
+  active,
+  onSelect,
+}: {
+  state: AppState;
+  month: MonthSnapshot;
+  t: T;
+  active: AssignFilter;
+  onSelect: (v: Exclude<AssignFilter, 'all'>) => void;
+}) {
   if (month.bills.length === 0) return null;
 
   const primary = state.primaryCurrency;
   const rate = state.exchangeRate;
   const sumBy = (bills: Bill[], cur: Currency) =>
     bills.filter((b) => b.currency === cur).reduce((s, b) => s + b.amount, 0);
-  const combine = (crc: number, usd: number) =>
-    convert(crc, 'CRC', primary, rate) + convert(usd, 'USD', primary, rate);
+  const combine = (bills: Bill[]) =>
+    convert(sumBy(bills, 'CRC'), 'CRC', primary, rate) +
+    convert(sumBy(bills, 'USD'), 'USD', primary, rate);
 
-  const accountBills = month.bills.filter((b) => !b.creditCardId && !b.settledFrom);
-  const accountCRC = sumBy(accountBills, 'CRC');
-  const accountUSD = sumBy(accountBills, 'USD');
-
+  // Consistent buckets: every bill is either on a card or not, so the two
+  // summary cards always add up to the full total.
+  const accountBills = month.bills.filter((b) => !b.creditCardId);
   const cardBills = month.bills.filter((b) => b.creditCardId);
-  const cardCRC = sumBy(cardBills, 'CRC');
-  const cardUSD = sumBy(cardBills, 'USD');
+  const paidBills = month.bills.filter((b) => b.paid);
 
-  const totalCRC = accountCRC + cardCRC;
-  const totalUSD = accountUSD + cardUSD;
-
-  const paidBills = month.bills.filter((b) => b.settledFrom);
-  const paidCRC = sumBy(paidBills, 'CRC');
-  const paidUSD = sumBy(paidBills, 'USD');
-
-  const fullTotal = combine(totalCRC, totalUSD);
-  const paidTotal = combine(paidCRC, paidUSD);
+  const fullTotal = combine(month.bills);
+  const paidTotal = combine(paidBills);
   const paidPct = fullTotal > 0 ? Math.min(100, Math.round((paidTotal / fullTotal) * 100)) : 0;
 
   return (
@@ -194,33 +217,45 @@ function BillsSummary({ state, month, t }: { state: AppState; month: MonthSnapsh
         </div>
         <div className="hero-sub">
           <span>{t('alreadyPaid')}: {formatMoney(paidTotal, primary)}</span>
-          <span>{formatMoney(fullTotal - paidTotal, primary)}</span>
+          <span>{t('remaining')}: {formatMoney(fullTotal - paidTotal, primary)}</span>
         </div>
       </div>
 
       <div className="cards">
-        <div className="card">
+        <button
+          type="button"
+          className={`card tappable ${active === 'account' ? 'active' : ''}`}
+          onClick={() => onSelect('account')}
+        >
           <h3>{t('accountBills')}</h3>
-          <div className="value">{formatMoney(combine(accountCRC, accountUSD), primary)}</div>
-          <div className="sub">
-            {formatMoney(accountCRC, 'CRC')} · {formatMoney(accountUSD, 'USD')}
-          </div>
-        </div>
-        <div className="card">
+          <div className="value">{formatMoney(combine(accountBills), primary)}</div>
+          <div className="sub">{t('billsCount', { n: accountBills.length })} ›</div>
+        </button>
+        <button
+          type="button"
+          className={`card tappable ${active === 'card' ? 'active' : ''}`}
+          onClick={() => onSelect('card')}
+        >
           <h3>{t('creditCardBills')}</h3>
-          <div className="value">{formatMoney(combine(cardCRC, cardUSD), primary)}</div>
-          <div className="sub">
-            {formatMoney(cardCRC, 'CRC')} · {formatMoney(cardUSD, 'USD')}
-          </div>
-        </div>
+          <div className="value">{formatMoney(combine(cardBills), primary)}</div>
+          <div className="sub">{t('billsCount', { n: cardBills.length })} ›</div>
+        </button>
       </div>
+      <p className="muted" style={{ margin: '-6px 0 12px' }}>{t('tapCardHint')}</p>
     </>
   );
 }
 
 type BillFilter = 'all' | 'unpaid' | 'paid';
 
-function MonthBillsSection({ state, month, update, t }: Props) {
+function MonthBillsSection({
+  state,
+  month,
+  update,
+  t,
+  assignFilter,
+  onClearAssign,
+}: Props & { assignFilter: AssignFilter; onClearAssign: () => void }) {
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<BillFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -403,19 +438,24 @@ function MonthBillsSection({ state, month, update, t }: Props) {
   const visible = month.bills.filter((b) => {
     if (filter === 'paid' && !b.paid) return false;
     if (filter === 'unpaid' && b.paid) return false;
+    if (assignFilter === 'card' && !b.creditCardId) return false;
+    if (assignFilter === 'account' && b.creditCardId) return false;
     if (categoryFilter && b.category !== categoryFilter) return false;
     if (!query) return true;
     const haystack = [b.name, b.category, targetName(b)].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(query);
   });
 
-  const amountCounts = new Map<string, number>();
+  const amountGroups = new Map<string, Bill[]>();
   for (const b of month.bills) {
     if (!b.amount) continue;
     const key = `${b.currency}:${b.amount}`;
-    amountCounts.set(key, (amountCounts.get(key) || 0) + 1);
+    const group = amountGroups.get(key);
+    if (group) group.push(b);
+    else amountGroups.set(key, [b]);
   }
-  const isDuplicateAmount = (b: Bill) => (amountCounts.get(`${b.currency}:${b.amount}`) || 0) > 1;
+  const duplicatesOf = (b: Bill) =>
+    (amountGroups.get(`${b.currency}:${b.amount}`) || []).filter((x) => x.id !== b.id);
 
   return (
     <div className="section">
@@ -482,6 +522,11 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             <button className={`chip ${filter === 'paid' ? 'active' : ''}`} onClick={() => setFilter('paid')}>
               {t('paid')} · {paidCount}
             </button>
+            {assignFilter !== 'all' && (
+              <button className="chip active" onClick={onClearAssign}>
+                {assignFilter === 'card' ? t('creditCardBills') : t('accountBills')} ×
+              </button>
+            )}
           </div>
 
           {categoriesInMonth.length > 1 && (
@@ -507,22 +552,22 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                   open={expandedId === b.id}
                   onToggle={() => setExpandedId(expandedId === b.id ? null : b.id)}
                   info={
-                    <>
-                      <div className="entry-title">{b.name || '—'}</div>
-                      <div className="entry-meta">
-                        <span className="tag">{b.category}</span>
-                        {b.source === 'subscription' && (
-                          <span className="tag sub">{t('sourceSubscription')}</span>
-                        )}
-                        {targetName(b) && <span>{targetName(b)}</span>}
-                        {b.date && <span>{b.date}</span>}
-                      </div>
-                    </>
+                    <div className="entry-line">
+                      <span
+                        className="cat-dot"
+                        style={{ background: categoryColor(b.category) }}
+                        title={b.category}
+                      />
+                      <span className="entry-title">{b.name || '—'}</span>
+                      {b.source === 'subscription' && (
+                        <span className="sub-glyph" title={t('sourceSubscription')}>↻</span>
+                      )}
+                    </div>
                   }
                   side={
                     <>
                       <div className="entry-amount">
-                        {isDuplicateAmount(b) && (
+                        {duplicatesOf(b).length > 0 && (
                           <span className="dup-dot" title={t('duplicateAmountWarning')} />
                         )}
                         {formatMoney(b.amount, b.currency)}
@@ -538,6 +583,14 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                     </>
                   }
                 >
+                  <div className="entry-meta" style={{ marginTop: 10 }}>
+                    <span className="tag">{b.category}</span>
+                    {b.source === 'subscription' && (
+                      <span className="tag sub">{t('sourceSubscription')}</span>
+                    )}
+                    {targetName(b) && <span>{targetName(b)}</span>}
+                    {b.date && <span>{b.date}</span>}
+                  </div>
                   <div className="field-grid">
                     <Field label={t('name')} span2>
                       <input value={b.name} onChange={(e) => patchBill(b.id, { name: e.target.value })} />
@@ -595,8 +648,12 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                       />
                     </Field>
                   </div>
-                  {isDuplicateAmount(b) && (
-                    <p className="muted dup-note">{t('duplicateAmountWarning')}</p>
+                  {duplicatesOf(b).length > 0 && (
+                    <p className="muted dup-note">
+                      {t('duplicateAmountWith', {
+                        names: duplicatesOf(b).map((x) => `"${x.name || '—'}"`).join(', '),
+                      })}
+                    </p>
                   )}
                   <div className="entry-actions">
                     <button className="danger" onClick={() => remove(b.id)}>{t('remove')}</button>
