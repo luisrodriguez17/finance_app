@@ -105,6 +105,20 @@ function adjustAccount(state: AppState, accountId: string, delta: number): AppSt
   };
 }
 
+/** Add (or refund, with a negative delta) an amount to a card's debt in the given currency. */
+function adjustCard(state: AppState, creditCardId: string, currency: Currency, delta: number): AppState {
+  return {
+    ...state,
+    creditCards: state.creditCards.map((c) =>
+      c.id === creditCardId
+        ? currency === 'CRC'
+          ? { ...c, owedCRC: c.owedCRC + delta }
+          : { ...c, owedUSD: c.owedUSD + delta }
+        : c
+    ),
+  };
+}
+
 function CategorySelect({
   state,
   update,
@@ -287,6 +301,7 @@ function MonthBillsSection({
       paid,
       date: date || undefined,
       settledFrom: paid && accountId ? { accountId, amount: amt, currency } : undefined,
+      chargedTo: paid && creditCardId ? { creditCardId, amount: amt, currency } : undefined,
     };
 
     update((s) => {
@@ -297,7 +312,7 @@ function MonthBillsSection({
             `Account "${acc.name}" is in ${acc.currency} but the bill is in ${currency}. ` +
               `The bill will be added unpaid.`
           );
-          const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined };
+          const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined, chargedTo: undefined };
           return {
             ...s,
             months: {
@@ -312,6 +327,7 @@ function MonthBillsSection({
       }
       let next = s;
       if (paid && accountId) next = adjustAccount(next, accountId, -amt);
+      if (paid && creditCardId) next = adjustCard(next, creditCardId, currency, amt);
       return {
         ...next,
         months: {
@@ -365,6 +381,11 @@ function MonthBillsSection({
           }
           next = adjustAccount(next, bill.accountId, -bill.amount);
         }
+        // Paid on a card bill means the charge actually hit the card: add it to
+        // the card's debt once, with a snapshot so unpaying/removing refunds it.
+        if (bill.creditCardId) {
+          next = adjustCard(next, bill.creditCardId, bill.currency, bill.amount);
+        }
         next = {
           ...next,
           months: {
@@ -379,6 +400,9 @@ function MonthBillsSection({
                       settledFrom: bill.accountId
                         ? { accountId: bill.accountId, amount: bill.amount, currency: bill.currency }
                         : undefined,
+                      chargedTo: bill.creditCardId
+                        ? { creditCardId: bill.creditCardId, amount: bill.amount, currency: bill.currency }
+                        : undefined,
                     }
                   : b
               ),
@@ -389,6 +413,9 @@ function MonthBillsSection({
         if (bill.settledFrom) {
           next = adjustAccount(next, bill.settledFrom.accountId, bill.settledFrom.amount);
         }
+        if (bill.chargedTo) {
+          next = adjustCard(next, bill.chargedTo.creditCardId, bill.chargedTo.currency, -bill.chargedTo.amount);
+        }
         next = {
           ...next,
           months: {
@@ -396,7 +423,7 @@ function MonthBillsSection({
             [month.monthKey]: {
               ...next.months[month.monthKey],
               bills: next.months[month.monthKey].bills.map((b) =>
-                b.id === id ? { ...b, paid: false, settledFrom: undefined } : b
+                b.id === id ? { ...b, paid: false, settledFrom: undefined, chargedTo: undefined } : b
               ),
             },
           },
@@ -411,6 +438,9 @@ function MonthBillsSection({
       let next = s;
       if (bill?.settledFrom) {
         next = adjustAccount(next, bill.settledFrom.accountId, bill.settledFrom.amount);
+      }
+      if (bill?.chargedTo) {
+        next = adjustCard(next, bill.chargedTo.creditCardId, bill.chargedTo.currency, -bill.chargedTo.amount);
       }
       return {
         ...next,
@@ -431,15 +461,18 @@ function MonthBillsSection({
         ? state.accounts.find((a) => a.id === b.accountId)?.name
         : undefined;
 
-  const unpaidCount = month.bills.filter((b) => !b.paid).length;
-  const paidCount = month.bills.length - unpaidCount;
+  // Scope everything (counts, categories, list) to the active assignment
+  // filter so the chips always agree with what a tapped summary card shows.
+  const scoped = month.bills.filter((b) =>
+    assignFilter === 'card' ? !!b.creditCardId : assignFilter === 'account' ? !b.creditCardId : true
+  );
+  const unpaidCount = scoped.filter((b) => !b.paid).length;
+  const paidCount = scoped.length - unpaidCount;
   const query = search.trim().toLowerCase();
-  const categoriesInMonth = Array.from(new Set(month.bills.map((b) => b.category))).sort();
-  const visible = month.bills.filter((b) => {
+  const categoriesInMonth = Array.from(new Set(scoped.map((b) => b.category))).sort();
+  const visible = scoped.filter((b) => {
     if (filter === 'paid' && !b.paid) return false;
     if (filter === 'unpaid' && b.paid) return false;
-    if (assignFilter === 'card' && !b.creditCardId) return false;
-    if (assignFilter === 'account' && b.creditCardId) return false;
     if (categoryFilter && b.category !== categoryFilter) return false;
     if (!query) return true;
     const haystack = [b.name, b.category, targetName(b)].filter(Boolean).join(' ').toLowerCase();
@@ -514,7 +547,7 @@ function MonthBillsSection({
           />
           <div className="chip-row">
             <button className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-              {t('filterAll')} · {month.bills.length}
+              {t('filterAll')} · {scoped.length}
             </button>
             <button className={`chip ${filter === 'unpaid' ? 'active' : ''}`} onClick={() => setFilter('unpaid')}>
               {t('unpaid')} · {unpaidCount}
@@ -599,14 +632,14 @@ function MonthBillsSection({
                       <input
                         type="number"
                         value={b.amount}
-                        disabled={b.paid && !!b.settledFrom}
+                        disabled={b.paid && (!!b.settledFrom || !!b.chargedTo)}
                         onChange={(e) => patchBill(b.id, { amount: Number(e.target.value) })}
                       />
                     </Field>
                     <Field label={t('currency')}>
                       <select
                         value={b.currency}
-                        disabled={b.paid && !!b.settledFrom}
+                        disabled={b.paid && (!!b.settledFrom || !!b.chargedTo)}
                         onChange={(e) => patchBill(b.id, { currency: e.target.value as Currency })}
                       >
                         <option value="CRC">₡ CRC</option>
