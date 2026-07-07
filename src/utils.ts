@@ -34,6 +34,13 @@ export const formatMoney = (amount: number, currency: Currency) => {
   })}`;
 };
 
+/** Deterministic dot color for a category name, so the same category always gets the same hue. */
+export const categoryColor = (name: string) => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+  return `hsl(${h} 55% 55%)`;
+};
+
 export const initials = (name: string) =>
   name
     .trim()

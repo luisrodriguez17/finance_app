@@ -120,6 +120,13 @@ const en: Dict = {
   fromBills: 'From bills',
   subscriptionsCount: '{n} subscriptions',
   activeCount: '{n} active',
+  searchBillsPlaceholder: 'Search bills…',
+  duplicateAmountWarning: 'Another bill this month has the exact same amount — worth a quick check that this isn\'t a duplicate.',
+  duplicateAmountWith:
+    'Same amount as {names} this month — worth a quick check that this isn\'t a duplicate.',
+  remaining: 'Remaining',
+  billsCount: '{n} bills',
+  tapCardHint: 'Tap a summary card to see exactly which bills make up that total.',
 
   // Credit Cards
   cardsTitle: 'Credit Cards',
@@ -147,7 +154,7 @@ const en: Dict = {
   paymentPrompt: 'Enter the payment amount and currency:',
   makePayment: 'Make payment',
   cardsHelp:
-    '"Manual" is debt you enter directly. "From bills" is the sum of bills you assigned to this card. The card\'s total debt is the sum of both.',
+    '"Manual" is debt you enter directly. "From bills" is the sum of paid bills assigned to this card — a bill counts toward the card\'s debt once it is marked paid (i.e. actually charged). The card\'s total debt is the sum of both.',
   paymentHelp:
     '"Pay" subtracts a payment amount from the manual debt on this card.',
   correctHelp:
@@ -403,6 +410,13 @@ const es: Dict = {
   fromBills: 'De gastos',
   subscriptionsCount: '{n} suscripciones',
   activeCount: '{n} activas',
+  searchBillsPlaceholder: 'Buscar gastos…',
+  duplicateAmountWarning: 'Otro gasto de este mes tiene exactamente el mismo monto — vale la pena revisar que no sea un duplicado.',
+  duplicateAmountWith:
+    'Mismo monto que {names} este mes — vale la pena revisar que no sea un duplicado.',
+  remaining: 'Restante',
+  billsCount: '{n} gastos',
+  tapCardHint: 'Toque una tarjeta de resumen para ver exactamente qué gastos componen ese total.',
 
   // Credit Cards
   cardsTitle: 'Tarjetas de Crédito',
@@ -430,7 +444,7 @@ const es: Dict = {
   paymentPrompt: 'Ingrese el monto y la moneda del pago:',
   makePayment: 'Registrar pago',
   cardsHelp:
-    '"Manual" es la deuda que ingresa directamente. "De gastos" es la suma de gastos asignados a esta tarjeta. El total es la suma de ambos.',
+    '"Manual" es la deuda que ingresa directamente. "De gastos" es la suma de gastos pagados asignados a esta tarjeta — un gasto cuenta en la deuda de la tarjeta cuando se marca pagado (es decir, ya se cargó). El total es la suma de ambos.',
   paymentHelp:
     '"Pagar" resta el monto del pago de la deuda manual de esta tarjeta.',
   correctHelp:

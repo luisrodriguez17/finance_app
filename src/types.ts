@@ -15,6 +15,8 @@ export interface Bill {
   /** Snapshot of what was deducted from the account when this was paid; used to refund on unpay/remove. */
   settledFrom?: { accountId: string; amount: number; currency: Currency };
   paid: boolean;
+  /** Optional ISO date (YYYY-MM-DD) the bill is due/for. */
+  date?: string;
 }
 
 export interface Subscription {

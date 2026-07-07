@@ -101,8 +101,10 @@ export default function Dashboard({ state, month, update, t, navigate }: Props) 
   const billsUSD = directBills.filter((b) => b.currency === 'USD').reduce((s, b) => s + b.amount, 0);
 
   // CC debt is global (not month-specific), so sum bills-on-card across all months
-  // to match the Credit Cards tab.
-  const allCardBills = Object.values(state.months).flatMap((m) => m.bills).filter((b) => b.creditCardId);
+  // to match the Credit Cards tab. Only paid bills count: paid = charged to the card.
+  const allCardBills = Object.values(state.months)
+    .flatMap((m) => m.bills)
+    .filter((b) => b.creditCardId && b.paid);
   const cardBillsCRC = allCardBills.filter((b) => b.currency === 'CRC').reduce((s, b) => s + b.amount, 0);
   const cardBillsUSD = allCardBills.filter((b) => b.currency === 'USD').reduce((s, b) => s + b.amount, 0);
 
