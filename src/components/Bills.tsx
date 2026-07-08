@@ -797,11 +797,36 @@ function SubscriptionsSection({
     : n === 12 ? t('freqYearly')
     : t('freqMonthly');
 
-  const activeCount = state.subscriptions.filter((s) => s.active).length;
+  const activeSubs = state.subscriptions.filter((s) => s.active);
+  const activeCount = activeSubs.length;
+
+  // Spread each active subscription's cost evenly across its billing frequency
+  // (e.g. a quarterly charge counts as 1/3 per month) to get a comparable monthly average.
+  const primary = state.primaryCurrency;
+  const secondary: Currency = primary === 'CRC' ? 'USD' : 'CRC';
+  const monthlyFor = (cur: Currency) =>
+    activeSubs
+      .filter((s) => s.currency === cur)
+      .reduce((sum, s) => sum + s.amount / (s.frequencyMonths || 1), 0);
+  const monthlyPrimary = monthlyFor(primary);
+  const monthlySecondary = monthlyFor(secondary);
+
   const summary =
-    state.subscriptions.length === 0
-      ? t('noSubscriptionsYet')
-      : `${t('subscriptionsCount', { n: state.subscriptions.length })} · ${t('activeCount', { n: activeCount })}`;
+    state.subscriptions.length === 0 ? (
+      t('noSubscriptionsYet')
+    ) : (
+      <>
+        <div>
+          {t('subscriptionsCount', { n: state.subscriptions.length })} · {t('activeCount', { n: activeCount })}
+        </div>
+        {(monthlyPrimary !== 0 || monthlySecondary !== 0) && (
+          <div>
+            {t('monthlySpend')}: {formatMoney(monthlyPrimary, primary)}
+            {monthlySecondary !== 0 && <> · {formatMoney(monthlySecondary, secondary)}</>}
+          </div>
+        )}
+      </>
+    );
 
   return (
     <CollapsibleSection title={t('subscriptionsTitle')} summary={summary} open={open} onToggle={() => setOpen((v) => !v)}>

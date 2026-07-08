@@ -120,6 +120,7 @@ const en: Dict = {
   fromBills: 'From bills',
   subscriptionsCount: '{n} subscriptions',
   activeCount: '{n} active',
+  monthlySpend: 'Monthly spend',
   searchBillsPlaceholder: 'Search bills…',
   duplicateAmountWarning: 'Another bill this month has the exact same amount — worth a quick check that this isn\'t a duplicate.',
   duplicateAmountWith:
@@ -410,6 +411,7 @@ const es: Dict = {
   fromBills: 'De gastos',
   subscriptionsCount: '{n} suscripciones',
   activeCount: '{n} activas',
+  monthlySpend: 'Gasto mensual',
   searchBillsPlaceholder: 'Buscar gastos…',
   duplicateAmountWarning: 'Otro gasto de este mes tiene exactamente el mismo monto — vale la pena revisar que no sea un duplicado.',
   duplicateAmountWith:
