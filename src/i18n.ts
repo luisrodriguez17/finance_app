@@ -274,6 +274,45 @@ const en: Dict = {
   fundsNextMonth: 'This paycheck funds next month’s budget',
   fundsNextMonthHelp:
     'Enable this if you get paid near month-end (e.g. the 28th) for money that covers the following month’s bills — the deposit will be recorded under next month instead of the current one.',
+
+  // Account / cloud sync / auto bills
+  tab_account: 'Account',
+  accountSignIn: 'Sign in',
+  cloudNotConfigured:
+    'Cloud sync is not configured for this build. Add the VITE_FIREBASE_* keys to enable sign-in and sync.',
+  signOut: 'Sign out',
+  signInBenefit: 'Sign in to sync your encrypted data across devices.',
+  signInGoogle: 'Continue with Google',
+  signInMicrosoft: 'Continue with Outlook',
+  cloudSync: 'Cloud sync',
+  syncActive: 'Sync active — data is end-to-end encrypted',
+  syncSetupHint:
+    'Choose a sync passphrase (min. 8 characters). It encrypts your data before upload; without it nobody — not even the server — can read it. Do not lose it.',
+  syncPassphrase: 'Sync passphrase',
+  enableSync: 'Enable sync',
+  passphraseTooShort: 'At least 8 characters.',
+  syncUnlockHint: 'Cloud data found. Enter your sync passphrase to load it on this device.',
+  unlockSync: 'Unlock',
+  syncChecking: 'Checking cloud…',
+  security: 'Security',
+  encryptionInfo:
+    'Your data is encrypted at rest with AES-256-GCM. The encryption key is stored securely on this device and never in plain storage; the cloud only ever receives ciphertext.',
+  autoBills: 'Automatic bills',
+  notificationCapture: 'Capture bank notifications',
+  accessEnabled: 'Enabled',
+  grantNotificationAccess: 'Grant notification access',
+  notificationCaptureAndroidOnly:
+    'Bank-notification capture is available in the Android app (reads purchase notifications from your bank / Google Wallet).',
+  emailForwarding: 'Email forwarding',
+  emailForwardingHint:
+    'Forward bank transaction emails to this address and they will appear below for review.',
+  generateEmailAddress: 'Generate forwarding address',
+  emailForwardingNeedsSignIn: 'Sign in to get a personal forwarding address.',
+  autoBillDefaultCategory: 'Default category',
+  pendingBills: 'Captured transactions',
+  fromNotification: 'From notification',
+  fromEmail: 'From email',
+  dismiss: 'Dismiss',
 };
 
 const es: Dict = {
@@ -549,6 +588,46 @@ const es: Dict = {
   fundsNextMonth: 'Este pago financia el presupuesto del mes siguiente',
   fundsNextMonthHelp:
     'Actívelo si le pagan cerca de fin de mes (p. ej. el día 28) y ese dinero cubre los gastos del mes siguiente — el depósito se registrará en el mes siguiente en lugar del actual.',
+
+  // Account / cloud sync / auto bills
+  tab_account: 'Cuenta',
+  accountSignIn: 'Iniciar sesión',
+  cloudNotConfigured:
+    'La sincronización en la nube no está configurada en esta versión. Agregue las claves VITE_FIREBASE_* para habilitar el inicio de sesión.',
+  signOut: 'Cerrar sesión',
+  signInBenefit: 'Inicie sesión para sincronizar sus datos cifrados entre dispositivos.',
+  signInGoogle: 'Continuar con Google',
+  signInMicrosoft: 'Continuar con Outlook',
+  cloudSync: 'Sincronización en la nube',
+  syncActive: 'Sincronización activa — datos cifrados de extremo a extremo',
+  syncSetupHint:
+    'Elija una frase de sincronización (mín. 8 caracteres). Cifra sus datos antes de subirlos; sin ella nadie — ni el servidor — puede leerlos. No la pierda.',
+  syncPassphrase: 'Frase de sincronización',
+  enableSync: 'Activar sincronización',
+  passphraseTooShort: 'Mínimo 8 caracteres.',
+  syncUnlockHint:
+    'Se encontraron datos en la nube. Ingrese su frase de sincronización para cargarlos en este dispositivo.',
+  unlockSync: 'Desbloquear',
+  syncChecking: 'Verificando la nube…',
+  security: 'Seguridad',
+  encryptionInfo:
+    'Sus datos se cifran en reposo con AES-256-GCM. La clave se guarda de forma segura en este dispositivo y nunca en almacenamiento plano; a la nube solo llega texto cifrado.',
+  autoBills: 'Gastos automáticos',
+  notificationCapture: 'Capturar notificaciones bancarias',
+  accessEnabled: 'Activado',
+  grantNotificationAccess: 'Conceder acceso a notificaciones',
+  notificationCaptureAndroidOnly:
+    'La captura de notificaciones bancarias está disponible en la app de Android (lee notificaciones de compra de su banco / Google Wallet).',
+  emailForwarding: 'Reenvío de correos',
+  emailForwardingHint:
+    'Reenvíe los correos de transacciones bancarias a esta dirección y aparecerán abajo para revisión.',
+  generateEmailAddress: 'Generar dirección de reenvío',
+  emailForwardingNeedsSignIn: 'Inicie sesión para obtener una dirección de reenvío personal.',
+  autoBillDefaultCategory: 'Categoría predeterminada',
+  pendingBills: 'Transacciones capturadas',
+  fromNotification: 'De notificación',
+  fromEmail: 'De correo',
+  dismiss: 'Descartar',
 };
 
 const dicts: Record<Language, Dict> = { en, es };

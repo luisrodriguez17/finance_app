@@ -99,6 +99,28 @@ export interface SalarySchedule {
   appliedDates: string[];
 }
 
+/** A transaction captured automatically (bank notification / forwarded email) awaiting review. */
+export interface PendingBill {
+  id: string;
+  amount: number;
+  currency: Currency;
+  merchant: string;
+  /** ISO date-time when the transaction was captured. */
+  capturedAt: string;
+  source: 'notification' | 'email';
+  /** Original notification/email text, kept for reference until reviewed. */
+  raw?: string;
+}
+
+export interface AutoBillSettings {
+  /** Android notification capture toggle (requires notification access). */
+  notificationCapture: boolean;
+  /** Token identifying this user's inbound email forwarding address. */
+  emailToken?: string;
+  defaultCategory?: string;
+  defaultAccountId?: string;
+}
+
 export interface AppState {
   subscriptions: Subscription[];
   budget: BudgetSlice[];
@@ -115,4 +137,6 @@ export interface AppState {
   salarySchedule: SalarySchedule;
   language: Language;
   theme: Theme;
+  pendingBills: PendingBill[];
+  autoBills: AutoBillSettings;
 }

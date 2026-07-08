@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Each user's encrypted state blob + queued email bills.
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      match /pendingBills/{billId} {
+        // Clients read/delete their queue; only the Cloud Function (admin) writes.
+        allow read, delete: if request.auth != null && request.auth.uid == uid;
+        allow create, update: if false;
+      }
+    }
+
+    // Forwarding-token registry: a user may claim a token for themselves.
+    // Tokens are random and unguessable; reads are restricted to the function (admin).
+    match /emailTokens/{token} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+  }
+}

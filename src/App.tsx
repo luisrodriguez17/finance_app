@@ -10,6 +10,9 @@ import CreditCards from './components/CreditCards';
 import ImaginaryMoney from './components/ImaginaryMoney';
 import Analytics from './components/Analytics';
 import Settings from './components/Settings';
+import Account from './components/Account';
+import { useCloudSync } from './lib/cloudSync';
+import { drainCapturedBills } from './lib/notificationCapture';
 import './App.css';
 
 export type Tab =
@@ -20,6 +23,7 @@ export type Tab =
   | 'cards'
   | 'imaginary'
   | 'analytics'
+  | 'account'
   | 'settings';
 
 const primaryTabs: { id: Tab; labelKey: string; icon: (active: boolean) => ReactNode }[] = [
@@ -33,35 +37,68 @@ const moreTabs: { id: Tab; labelKey: string }[] = [
   { id: 'cards', labelKey: 'tab_cards' },
   { id: 'imaginary', labelKey: 'tab_imaginary' },
   { id: 'analytics', labelKey: 'tab_analytics' },
+  { id: 'account', labelKey: 'tab_account' },
   { id: 'settings', labelKey: 'tab_settings' },
 ];
 
 export default function App() {
-  const { state, update } = useStore();
+  const { state, setState, update } = useStore();
   const [tab, setTab] = useState<Tab>('dashboard');
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey());
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const t = tFn(state.language);
+  const sync = useCloudSync(state, setState);
+  const loaded = state !== null;
+
+  const t = tFn(state?.language ?? 'en');
 
   useEffect(() => {
-    document.documentElement.dataset.theme = state.theme;
-  }, [state.theme]);
+    if (state) document.documentElement.dataset.theme = state.theme;
+  }, [state?.theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    update((s) => ensureMonth(s, selectedMonth));
-  }, [selectedMonth, update]);
+    if (loaded) update((s) => ensureMonth(s, selectedMonth));
+  }, [selectedMonth, update, loaded]);
 
   useEffect(() => {
-    update((s) => applyDueSalaries(s));
+    if (loaded) update((s) => applyDueSalaries(s));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loaded]);
+
+  // Pull bank/wallet notifications captured by the Android listener while we were away.
+  useEffect(() => {
+    if (!loaded) return;
+    const drain = async () => {
+      const bills = await drainCapturedBills();
+      if (bills.length) {
+        update((s) => ({ ...s, pendingBills: [...s.pendingBills, ...bills] }));
+      }
+    };
+    drain();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') drain();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loaded, update]);
 
   const monthKeys = useMemo(
     () =>
-      Array.from(new Set([currentMonthKey(), ...Object.keys(state.months)])).sort().reverse(),
-    [state.months]
+      Array.from(
+        new Set([currentMonthKey(), ...Object.keys(state?.months ?? {})])
+      ).sort().reverse(),
+    [state?.months]
   );
+
+  if (!state) {
+    return (
+      <div className="app">
+        <main className="main">
+          <p>{t('loading')}</p>
+        </main>
+      </div>
+    );
+  }
 
   const month = state.months[selectedMonth];
 
@@ -104,6 +141,8 @@ export default function App() {
           <ImaginaryMoney state={state} update={update} t={t} />
         ) : tab === 'analytics' ? (
           <Analytics state={state} t={t} />
+        ) : tab === 'account' ? (
+          <Account state={state} update={update} t={t} sync={sync} />
         ) : (
           <Settings state={state} update={update} t={t} />
         )}

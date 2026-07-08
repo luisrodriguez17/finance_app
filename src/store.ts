@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { AppState, MonthSnapshot, Subscription } from './types';
 import { monthKey, monthDiff, nextMonthKey } from './utils';
+import { initSecureStorage, persistState } from './lib/secureStorage';
 
-const STORAGE_KEY = 'finance-app-state-v1';
-
-const defaultState: AppState = {
+export const defaultState: AppState = {
   subscriptions: [],
   budget: [],
   imaginary: [],
@@ -30,7 +29,22 @@ const defaultState: AppState = {
     fundsNextMonth: false,
     appliedDates: [],
   },
+  pendingBills: [],
+  autoBills: {
+    notificationCapture: false,
+  },
 };
+
+/** Normalize any persisted/imported/synced blob into a complete AppState. */
+export const normalizeState = (parsed: Record<string, unknown>): AppState => ({
+  ...defaultState,
+  ...(parsed as Partial<AppState>),
+  imaginary: migrateImaginary(parsed.imaginary),
+  autoBills: { ...defaultState.autoBills, ...((parsed.autoBills as object) ?? {}) },
+  pendingBills: Array.isArray(parsed.pendingBills)
+    ? (parsed.pendingBills as AppState['pendingBills'])
+    : [],
+});
 
 const migrateImaginary = (arr: unknown): AppState['imaginary'] => {
   if (!Array.isArray(arr)) return [];
@@ -50,30 +64,30 @@ const migrateImaginary = (arr: unknown): AppState['imaginary'] => {
   });
 };
 
-const load = (): AppState => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState;
-    const parsed = JSON.parse(raw);
-    return {
-      ...defaultState,
-      ...parsed,
-      imaginary: migrateImaginary(parsed.imaginary),
-    };
-  } catch {
-    return defaultState;
-  }
-};
-
 export function useStore() {
-  const [state, setState] = useState<AppState>(load);
+  const [state, setState] = useState<AppState | null>(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    let cancelled = false;
+    initSecureStorage()
+      .then((parsed) => {
+        if (!cancelled) setState(parsed ? normalizeState(parsed) : defaultState);
+      })
+      .catch((e) => {
+        console.error('Failed to initialize secure storage', e);
+        if (!cancelled) setState(defaultState);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (state) persistState(state);
   }, [state]);
 
   const update = useCallback((updater: (s: AppState) => AppState) => {
-    setState((prev) => updater(prev));
+    setState((prev) => (prev ? updater(prev) : prev));
   }, []);
 
   return { state, setState, update };
