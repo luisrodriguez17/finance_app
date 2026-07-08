@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AppState, BudgetSlice, Currency, MonthSnapshot, SavingsReserve } from '../types';
-import { formatMoney, uid, convert } from '../utils';
+import { formatMoney, uid, convert, computeReserve } from '../utils';
 import type { T } from '../i18n';
 
 type Props = {
@@ -8,11 +8,6 @@ type Props = {
   month: MonthSnapshot;
   update: (u: (s: AppState) => AppState) => void;
   t: T;
-};
-
-export const computeReserve = (r: SavingsReserve, balanceCRC: number, balanceUSD: number) => {
-  const base = r.currency === 'CRC' ? balanceCRC : balanceUSD;
-  return r.mode === 'percent' ? base * (r.value / 100) : r.value;
 };
 
 const ALLOC_COLORS_DARK = [

@@ -9,6 +9,7 @@ import Budget from './components/Budget';
 import CreditCards from './components/CreditCards';
 import ImaginaryMoney from './components/ImaginaryMoney';
 import Analytics from './components/Analytics';
+import Assistant from './components/Assistant';
 import Settings from './components/Settings';
 import './App.css';
 
@@ -20,6 +21,7 @@ export type Tab =
   | 'cards'
   | 'imaginary'
   | 'analytics'
+  | 'assistant'
   | 'settings';
 
 const primaryTabs: { id: Tab; labelKey: string; icon: (active: boolean) => ReactNode }[] = [
@@ -33,6 +35,7 @@ const moreTabs: { id: Tab; labelKey: string }[] = [
   { id: 'cards', labelKey: 'tab_cards' },
   { id: 'imaginary', labelKey: 'tab_imaginary' },
   { id: 'analytics', labelKey: 'tab_analytics' },
+  { id: 'assistant', labelKey: 'tab_assistant' },
   { id: 'settings', labelKey: 'tab_settings' },
 ];
 
@@ -104,6 +107,8 @@ export default function App() {
           <ImaginaryMoney state={state} update={update} t={t} />
         ) : tab === 'analytics' ? (
           <Analytics state={state} t={t} />
+        ) : tab === 'assistant' ? (
+          <Assistant state={state} update={update} t={t} />
         ) : (
           <Settings state={state} update={update} t={t} />
         )}

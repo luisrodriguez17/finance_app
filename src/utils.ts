@@ -1,4 +1,4 @@
-import type { Currency } from './types';
+import type { Currency, SavingsReserve } from './types';
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -41,6 +41,12 @@ export const initials = (name: string) =>
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('') || '?';
+
+/** Amount locked away by a savings reserve, in the reserve's own currency. */
+export const computeReserve = (r: SavingsReserve, balanceCRC: number, balanceUSD: number) => {
+  const base = r.currency === 'CRC' ? balanceCRC : balanceUSD;
+  return r.mode === 'percent' ? base * (r.value / 100) : r.value;
+};
 
 export const convert = (
   amount: number,

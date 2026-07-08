@@ -274,6 +274,30 @@ const en: Dict = {
   fundsNextMonth: 'This paycheck funds next month’s budget',
   fundsNextMonthHelp:
     'Enable this if you get paid near month-end (e.g. the 28th) for money that covers the following month’s bills — the deposit will be recorded under next month instead of the current one.',
+
+  // Assistant
+  tab_assistant: 'Assistant',
+  assistantTitle: 'Assistant',
+  assistantIntro:
+    'Ask how to use the app, ask about your own numbers, run quick projections — or ask it to add things for you.',
+  assistantWelcome:
+    'Hi! I can help you find your way around the app, analyze your finances, run quick projections, and even add accounts, bills, or subscriptions for you. What would you like to do?',
+  assistantPlaceholder: 'Ask about your finances…',
+  assistantSend: 'Send',
+  assistantThinking: 'Thinking…',
+  assistantLimitReached: 'You reached today\'s message limit. Try again tomorrow.',
+  assistantRemaining: '{n} messages left today',
+  assistantError: 'The assistant is unavailable right now. Please try again.',
+  assistantDisclaimer:
+    'Answers are estimates based on the data in this app, not financial advice.',
+  assistantNotConfigured:
+    'The assistant is not configured for this build. Add the VITE_FIREBASE_* keys and deploy the assistantChat function to enable it.',
+  assistantApply: 'Add it',
+  assistantApplied: 'Added ✓',
+  assistantDismiss: 'Dismiss',
+  assistantSuggest1: 'How much money will I have in 6 months?',
+  assistantSuggest2: 'Where does most of my money go?',
+  assistantSuggest3: 'Add a ₡5,000 monthly subscription called Gym',
 };
 
 const es: Dict = {
@@ -549,6 +573,30 @@ const es: Dict = {
   fundsNextMonth: 'Este pago financia el presupuesto del mes siguiente',
   fundsNextMonthHelp:
     'Actívelo si le pagan cerca de fin de mes (p. ej. el día 28) y ese dinero cubre los gastos del mes siguiente — el depósito se registrará en el mes siguiente en lugar del actual.',
+
+  // Assistant
+  tab_assistant: 'Asistente',
+  assistantTitle: 'Asistente',
+  assistantIntro:
+    'Pregunte cómo usar la app, consulte sus números, haga proyecciones — o pídale que agregue cosas por usted.',
+  assistantWelcome:
+    '¡Hola! Puedo ayudarle a usar la app, analizar sus finanzas, hacer proyecciones rápidas e incluso agregar cuentas, gastos o suscripciones por usted. ¿Qué desea hacer?',
+  assistantPlaceholder: 'Pregunte sobre sus finanzas…',
+  assistantSend: 'Enviar',
+  assistantThinking: 'Pensando…',
+  assistantLimitReached: 'Alcanzó el límite de mensajes de hoy. Intente mañana.',
+  assistantRemaining: '{n} mensajes restantes hoy',
+  assistantError: 'El asistente no está disponible en este momento. Intente de nuevo.',
+  assistantDisclaimer:
+    'Las respuestas son estimaciones basadas en los datos de esta app, no asesoría financiera.',
+  assistantNotConfigured:
+    'El asistente no está configurado en esta versión. Agregue las claves VITE_FIREBASE_* y despliegue la función assistantChat para habilitarlo.',
+  assistantApply: 'Agregar',
+  assistantApplied: 'Agregado ✓',
+  assistantDismiss: 'Descartar',
+  assistantSuggest1: '¿Cuánto dinero tendré en 6 meses?',
+  assistantSuggest2: '¿A dónde se va la mayor parte de mi dinero?',
+  assistantSuggest3: 'Agrega una suscripción mensual de ₡5,000 llamada Gimnasio',
 };
 
 const dicts: Record<Language, Dict> = { en, es };

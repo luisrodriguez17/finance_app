@@ -1,0 +1,14 @@
+{
+  "name": "finance-app-functions",
+  "private": true,
+  "description": "Assistant chatbot proxy (LLM calls happen server-side)",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0"
+  }
+}

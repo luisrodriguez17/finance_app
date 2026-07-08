@@ -1,8 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import type { AppState, MonthSnapshot } from '../types';
 import type { Tab } from '../App';
-import { formatMoney, convert, initials } from '../utils';
-import { computeReserve } from './Budget';
+import { formatMoney, convert, initials, computeReserve } from '../utils';
 import type { T } from '../i18n';
 
 type Props = {
