@@ -10,6 +10,8 @@ type Props = {
   t: T;
 };
 
+// Shared with Dashboard; losing fast-refresh on this file is fine.
+// eslint-disable-next-line react-refresh/only-export-components
 export const computeReserve = (r: SavingsReserve, balanceCRC: number, balanceUSD: number) => {
   const base = r.currency === 'CRC' ? balanceCRC : balanceUSD;
   return r.mode === 'percent' ? base * (r.value / 100) : r.value;
