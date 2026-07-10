@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
-import { renderApp, goToMore, entry, addForm, money } from './helpers';
+import { renderApp, goToMore, entry, addForm, money, storedState } from './helpers';
 import { seededState, RATE } from './fixtures';
 
 const crc = (n: number) => money(n, 'CRC');
@@ -35,6 +35,10 @@ describe('Credit Cards — with data', () => {
   it('totals manual debt plus bills assigned to the card', async () => {
     const { user } = renderApp(seededState());
     await goToMore(user, 'Credit Cards');
+
+    // DEBUG: temporary diagnostic to inspect CI-only failure — remove before merging.
+    console.error('DEBUG months snapshot:', JSON.stringify(storedState().months, null, 2));
+    console.error('DEBUG creditCards snapshot:', JSON.stringify(storedState().creditCards));
 
     // manual ₡100,000 + $50, plus the ₡30,000 Amazon bill
     expect(screen.getByText(crc(130000 + 50 * RATE))).toBeInTheDocument();
