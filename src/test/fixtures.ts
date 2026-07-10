@@ -56,7 +56,8 @@ export function emptyState(): AppState {
  * - Account balances: ₡500,000 + $1,000  → combined ₡1,000,000
  * - Reserves: 10% of CRC balance = ₡50,000; fixed $200
  * - Current-month direct bills (no card, not settled): ₡200,000 (rent) + $15 (Netflix)
- * - Card debt: manual ₡100,000 + $50, plus ₡30,000 bill on card → ₡130,000 + $50
+ * - Card debt: the owed totals ₡100,000 + $50. The ₡30,000 Amazon bill sits on the
+ *   card but is unpaid, so it hasn't charged the card yet (transactional card debt).
  * - Pending imaginary: ₡20,000 + $5 (Alice); Bob is fully collected
  * - Dashboard remaining: CRC 500,000−50,000−200,000 = ₡250,000; USD 1,000−200−15 = $785
  *   → combined ₡642,500

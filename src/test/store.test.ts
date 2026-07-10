@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { applyDueSalaries, ensureMonth, markPastAsApplied } from '../store';
-import type { AppState, Subscription } from '../types';
+import {
+  applyDueSalaries,
+  cleanupOffsetBills,
+  ensureMonth,
+  markPastAsApplied,
+  previewOffsetCleanup,
+} from '../store';
+import type { AppState, Bill, Subscription } from '../types';
 import { emptyState } from './fixtures';
 
 const sub = (over: Partial<Subscription>): Subscription => ({
@@ -157,5 +163,73 @@ describe('applyDueSalaries', () => {
 
     expect(next.months['2026-07'].salary).toEqual({ amount: 500, currency: 'USD' });
     expect(next.salarySchedule.appliedDates).toContain('2026-07-15');
+  });
+});
+
+describe('legacy offset cleanup', () => {
+  const offset = (id: string, amount: number, currency: 'CRC' | 'USD', cardId: string): Bill => ({
+    id,
+    name: `Offset (${cardId})`,
+    amount,
+    currency,
+    category: 'Other',
+    source: 'manual',
+    creditCardId: cardId,
+    paid: true,
+  });
+
+  const normal: Bill = {
+    id: 'normal',
+    name: 'Groceries',
+    amount: 5000,
+    currency: 'CRC',
+    category: 'Food',
+    source: 'manual',
+    paid: true,
+  };
+
+  const stateWithOffsets = (): AppState => ({
+    ...emptyState(),
+    months: {
+      '2026-06': {
+        monthKey: '2026-06',
+        salary: { amount: 0, currency: 'CRC' },
+        bills: [normal, offset('o1', 10000, 'CRC', 'card-a')],
+      },
+      '2026-07': {
+        monthKey: '2026-07',
+        salary: { amount: 0, currency: 'CRC' },
+        bills: [offset('o2', 20, 'USD', 'card-b')],
+      },
+    },
+  });
+
+  it('previews the count, totals and affected cards', () => {
+    expect(previewOffsetCleanup(stateWithOffsets())).toEqual({
+      count: 2,
+      totalCRC: 10000,
+      totalUSD: 20,
+      cardCount: 2,
+    });
+  });
+
+  it('ignores bills that merely start with "Offset (" but are not on a card', () => {
+    const s: AppState = {
+      ...emptyState(),
+      months: {
+        '2026-07': {
+          monthKey: '2026-07',
+          salary: { amount: 0, currency: 'CRC' },
+          bills: [{ ...normal, id: 'n2', name: 'Offset (savings)' }],
+        },
+      },
+    };
+    expect(previewOffsetCleanup(s).count).toBe(0);
+  });
+
+  it('removes only the offset bills, leaving real spending intact', () => {
+    const next = cleanupOffsetBills(stateWithOffsets());
+    expect(next.months['2026-06'].bills.map((b) => b.id)).toEqual(['normal']);
+    expect(next.months['2026-07'].bills).toEqual([]);
   });
 });

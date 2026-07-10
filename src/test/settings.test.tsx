@@ -97,6 +97,37 @@ describe('Settings', () => {
     expect(sched.getByText('0 past deposits recorded')).toBeInTheDocument();
   });
 
+  it('offers a one-time cleanup for legacy Offset correction bills', async () => {
+    const state = seededState();
+    state.months[Object.keys(state.months)[0]].bills.push({
+      id: 'legacy-offset',
+      name: 'Offset (Visa)',
+      amount: 12000,
+      currency: 'CRC',
+      category: 'Other',
+      source: 'manual',
+      creditCardId: 'card-1',
+      paid: true,
+    });
+    const { user } = renderApp(state);
+    await goToMore(user, 'Settings');
+
+    expect(screen.getByText('Remove old correction bills')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clean up now' }));
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(screen.queryByText('Remove old correction bills')).not.toBeInTheDocument();
+    const remaining = Object.values(storedState().months).flatMap((m) => m.bills);
+    expect(remaining.some((b) => b.name === 'Offset (Visa)')).toBe(false);
+  });
+
+  it('does not show the offset cleanup section without legacy bills', async () => {
+    const { user } = renderApp(seededState());
+    await goToMore(user, 'Settings');
+
+    expect(screen.queryByText('Remove old correction bills')).not.toBeInTheDocument();
+  });
+
   it('imports app state pasted as JSON', async () => {
     const { user } = renderApp();
     await goToMore(user, 'Settings');

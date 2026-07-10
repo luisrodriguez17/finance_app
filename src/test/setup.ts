@@ -10,6 +10,11 @@ class ResizeObserverStub {
 }
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
 
+// jsdom doesn't implement scrollIntoView (used by the Bills summary cards).
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 beforeEach(() => {
   // jsdom doesn't implement alert/confirm; the app uses both. Fresh mocks per test
   // so assertions like `expect(window.alert).toHaveBeenCalled()` work.

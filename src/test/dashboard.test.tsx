@@ -35,7 +35,8 @@ describe('Dashboard — with data', () => {
 
     card('Total Bills').getByText(crc(200000 + 15 * RATE));
     card('Total Balance').getByText(crc(1000000));
-    expect(screen.getByText(`${crc(130000)} · ${usd(50)}`)).toBeInTheDocument(); // card debt
+    // card debt = the owed totals; the unpaid Amazon bill hasn't charged the card yet
+    expect(screen.getByText(`${crc(100000)} · ${usd(50)}`)).toBeInTheDocument();
     expect(screen.getByText(`${crc(50000)} · ${usd(200)}`)).toBeInTheDocument(); // reserves
     expect(screen.getByText(`${crc(20000)} · ${usd(5)}`)).toBeInTheDocument(); // imaginary
     card('Salary').getByText(crc(800000));
@@ -53,10 +54,10 @@ describe('Dashboard — with data', () => {
 
     await user.click(screen.getByRole('checkbox', { name: 'Include credit card debt in total bills' }));
 
-    // bills: +₡130,000 and +$50
-    card('Total Bills').getByText(crc(330000 + 65 * RATE));
-    // remaining: CRC 250,000−130,000; USD 785−50
-    expect(screen.getByText(crc(120000 + 735 * RATE))).toBeInTheDocument();
+    // bills: +₡100,000 and +$50 (the owed totals)
+    card('Total Bills').getByText(crc(300000 + 65 * RATE));
+    // remaining: CRC 250,000−100,000; USD 785−50
+    expect(screen.getByText(crc(150000 + 735 * RATE))).toBeInTheDocument();
   });
 
   it('adds pending imaginary money to remaining when toggled', async () => {

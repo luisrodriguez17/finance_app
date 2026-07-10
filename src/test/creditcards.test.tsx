@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
-import { renderApp, goToMore, entry, addForm, money, storedState } from './helpers';
+import { screen, within } from '@testing-library/react';
+import { renderApp, goToMore, entry, addForm, money } from './helpers';
 import { seededState, RATE } from './fixtures';
 
 const crc = (n: number) => money(n, 'CRC');
@@ -32,21 +32,16 @@ describe('Credit Cards — empty account', () => {
 });
 
 describe('Credit Cards — with data', () => {
-  it('totals manual debt plus bills assigned to the card', async () => {
+  it('shows the owed totals as the card debt (unpaid card bills not yet charged)', async () => {
     const { user } = renderApp(seededState());
     await goToMore(user, 'Credit Cards');
 
-    // DEBUG: temporary diagnostic to inspect CI-only failure — remove before merging.
-    console.error('DEBUG months snapshot:', JSON.stringify(storedState().months, null, 2));
-    console.error('DEBUG creditCards snapshot:', JSON.stringify(storedState().creditCards));
-
-    // manual ₡100,000 + $50, plus the ₡30,000 Amazon bill
-    expect(screen.getByText(crc(130000 + 50 * RATE))).toBeInTheDocument();
-    expect(screen.getAllByText(crc(130000)).length).toBeGreaterThan(0);
+    expect(screen.getByText(crc(100000 + 50 * RATE))).toBeInTheDocument();
+    expect(screen.getAllByText(crc(100000)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(usd(50)).length).toBeGreaterThan(0);
   });
 
-  it('a payment reduces the manual debt', async () => {
+  it('a payment reduces the owed debt', async () => {
     const { user } = renderApp(seededState());
     await goToMore(user, 'Credit Cards');
 
@@ -58,26 +53,28 @@ describe('Credit Cards — with data', () => {
     await user.type(payInput, '30000');
     await user.click(screen.getByRole('button', { name: 'Make payment' }));
 
-    // manual CRC now ₡70,000 → card total ₡100,000; combined ₡125,000
-    expect(screen.getByText(crc(100000 + 50 * RATE))).toBeInTheDocument();
+    // owed CRC now ₡70,000 → combined ₡95,000
+    expect(screen.getByText(crc(70000 + 50 * RATE))).toBeInTheDocument();
     expect(entry('Visa').getByDisplayValue('70000')).toBeInTheDocument();
   });
 
-  it('a correction lands the card total exactly on the real value', async () => {
+  it('a correction sets the owed totals to the real values', async () => {
     const { user } = renderApp(seededState());
     await goToMore(user, 'Credit Cards');
 
     await user.click(screen.getByText('Visa'));
     await user.click(screen.getByRole('button', { name: 'Correct' }));
 
-    // prefilled with the current totals (₡130,000 / $50)
-    const realCRC = entry('Visa').getByDisplayValue('130000');
+    // prefilled with the current owed totals; target via its field label since
+    // the Total ₡ input shows the same value
+    const realField = entry('Visa').getByText('Real ₡:').closest('.field')!;
+    const realCRC = within(realField as HTMLElement).getByRole('spinbutton');
+    expect(realCRC).toHaveValue(100000);
     await user.clear(realCRC);
     await user.type(realCRC, '150000');
     await user.click(screen.getByRole('button', { name: 'Apply correction' }));
 
-    // manual debt absorbed the +₡20,000 difference
-    expect(entry('Visa').getByDisplayValue('120000')).toBeInTheDocument();
+    expect(entry('Visa').getByDisplayValue('150000')).toBeInTheDocument();
     expect(screen.getByText(crc(150000 + 50 * RATE))).toBeInTheDocument();
   });
 
