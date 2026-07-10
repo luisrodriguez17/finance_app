@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { AppState, Bill, Currency, MonthSnapshot, Subscription } from '../types';
-import { formatMoney, uid, convert } from '../utils';
+import { formatMoney, uid, convert, categoryColor } from '../utils';
 import { ensureMonth } from '../store';
 import type { T } from '../i18n';
 import { AddToggle, CollapsibleSection, EntryItem, Field } from './ui';
@@ -12,12 +12,31 @@ type Props = {
   t: T;
 };
 
+type AssignFilter = 'all' | 'account' | 'card';
+
 export default function Bills({ state, month, update, t }: Props) {
+  const [assignFilter, setAssignFilter] = useState<AssignFilter>('all');
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const selectAssign = (v: Exclude<AssignFilter, 'all'>) => {
+    setAssignFilter((prev) => (prev === v ? 'all' : v));
+    listRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div>
       <h2>{t('billsTitle')}</h2>
-      <BillsSummary state={state} month={month} t={t} />
-      <MonthBillsSection state={state} month={month} update={update} t={t} />
+      <BillsSummary state={state} month={month} t={t} active={assignFilter} onSelect={selectAssign} />
+      <div ref={listRef}>
+        <MonthBillsSection
+          state={state}
+          month={month}
+          update={update}
+          t={t}
+          assignFilter={assignFilter}
+          onClearAssign={() => setAssignFilter('all')}
+        />
+      </div>
       <SubscriptionsSection state={state} update={update} monthKey={month.monthKey} t={t} />
     </div>
   );
@@ -82,6 +101,20 @@ function adjustAccount(state: AppState, accountId: string, delta: number): AppSt
     ...state,
     accounts: state.accounts.map((a) =>
       a.id === accountId ? { ...a, balance: a.balance + delta } : a
+    ),
+  };
+}
+
+/** Add (or refund, with a negative delta) an amount to a card's debt in the given currency. */
+function adjustCard(state: AppState, creditCardId: string, currency: Currency, delta: number): AppState {
+  return {
+    ...state,
+    creditCards: state.creditCards.map((c) =>
+      c.id === creditCardId
+        ? currency === 'CRC'
+          ? { ...c, owedCRC: c.owedCRC + delta }
+          : { ...c, owedUSD: c.owedUSD + delta }
+        : c
     ),
   };
 }
@@ -154,76 +187,117 @@ function CategorySelect({
   );
 }
 
-function BillsSummary({ state, month, t }: { state: AppState; month: MonthSnapshot; t: T }) {
+function BillsSummary({
+  state,
+  month,
+  t,
+  active,
+  onSelect,
+}: {
+  state: AppState;
+  month: MonthSnapshot;
+  t: T;
+  active: AssignFilter;
+  onSelect: (v: Exclude<AssignFilter, 'all'>) => void;
+}) {
   if (month.bills.length === 0) return null;
 
   const primary = state.primaryCurrency;
+  const secondary: Currency = primary === 'CRC' ? 'USD' : 'CRC';
   const rate = state.exchangeRate;
   const sumBy = (bills: Bill[], cur: Currency) =>
     bills.filter((b) => b.currency === cur).reduce((s, b) => s + b.amount, 0);
-  const combine = (crc: number, usd: number) =>
-    convert(crc, 'CRC', primary, rate) + convert(usd, 'USD', primary, rate);
+  // Only used internally to size the paid-progress bar — never shown as a number,
+  // since blending currencies through an exchange rate into one total is exactly
+  // what made this view confusing.
+  const combine = (bills: Bill[]) =>
+    convert(sumBy(bills, 'CRC'), 'CRC', primary, rate) +
+    convert(sumBy(bills, 'USD'), 'USD', primary, rate);
+  // "₡X" alone, or "₡X · $Y" when both currencies are actually present. The
+  // "· $Y" is kept as one unbreakable unit so a line wrap never orphans the
+  // separator from its amount.
+  const amountLine = (bills: Bill[]) => {
+    const p = sumBy(bills, primary);
+    const s = sumBy(bills, secondary);
+    return (
+      <>
+        {formatMoney(p, primary)}
+        {s !== 0 && <span style={{ whiteSpace: 'nowrap' }}> · {formatMoney(s, secondary)}</span>}
+      </>
+    );
+  };
 
-  const accountBills = month.bills.filter((b) => !b.creditCardId && !b.settledFrom);
-  const accountCRC = sumBy(accountBills, 'CRC');
-  const accountUSD = sumBy(accountBills, 'USD');
-
+  // Consistent buckets: every bill is either on a card or not, so the two
+  // summary cards always add up to the full total.
+  const accountBills = month.bills.filter((b) => !b.creditCardId);
   const cardBills = month.bills.filter((b) => b.creditCardId);
-  const cardCRC = sumBy(cardBills, 'CRC');
-  const cardUSD = sumBy(cardBills, 'USD');
+  const paidBills = month.bills.filter((b) => b.paid);
+  const unpaidBills = month.bills.filter((b) => !b.paid);
 
-  const totalCRC = accountCRC + cardCRC;
-  const totalUSD = accountUSD + cardUSD;
-
-  const paidBills = month.bills.filter((b) => b.settledFrom);
-  const paidCRC = sumBy(paidBills, 'CRC');
-  const paidUSD = sumBy(paidBills, 'USD');
-
-  const fullTotal = combine(totalCRC, totalUSD);
-  const paidTotal = combine(paidCRC, paidUSD);
+  const fullTotal = combine(month.bills);
+  const paidTotal = combine(paidBills);
   const paidPct = fullTotal > 0 ? Math.min(100, Math.round((paidTotal / fullTotal) * 100)) : 0;
 
   return (
     <>
       <div className="hero">
         <div className="hero-label">{t('fullTotal')}</div>
-        <div className="hero-value">{formatMoney(fullTotal, primary)}</div>
+        <div className="hero-value">{formatMoney(sumBy(month.bills, primary), primary)}</div>
+        {sumBy(month.bills, secondary) !== 0 && (
+          <div className="hero-value hero-value-secondary">
+            {formatMoney(sumBy(month.bills, secondary), secondary)}
+          </div>
+        )}
         <div className="hero-bar">
           <div style={{ width: `${paidPct}%` }} />
           <div style={{ width: `${100 - paidPct}%` }} />
         </div>
         <div className="hero-sub">
-          <span>{t('alreadyPaid')}: {formatMoney(paidTotal, primary)}</span>
-          <span>{formatMoney(fullTotal - paidTotal, primary)}</span>
+          <span>{t('alreadyPaid')}: {amountLine(paidBills)}</span>
+          <span>{t('remaining')}: {amountLine(unpaidBills)}</span>
         </div>
       </div>
 
       <div className="cards">
-        <div className="card">
+        <button
+          type="button"
+          className={`card tappable ${active === 'account' ? 'active' : ''}`}
+          onClick={() => onSelect('account')}
+        >
           <h3>{t('accountBills')}</h3>
-          <div className="value">{formatMoney(combine(accountCRC, accountUSD), primary)}</div>
-          <div className="sub">
-            {formatMoney(accountCRC, 'CRC')} · {formatMoney(accountUSD, 'USD')}
-          </div>
-        </div>
-        <div className="card">
+          <div className="value">{amountLine(accountBills)}</div>
+          <div className="sub">{t('billsCount', { n: accountBills.length })} ›</div>
+        </button>
+        <button
+          type="button"
+          className={`card tappable ${active === 'card' ? 'active' : ''}`}
+          onClick={() => onSelect('card')}
+        >
           <h3>{t('creditCardBills')}</h3>
-          <div className="value">{formatMoney(combine(cardCRC, cardUSD), primary)}</div>
-          <div className="sub">
-            {formatMoney(cardCRC, 'CRC')} · {formatMoney(cardUSD, 'USD')}
-          </div>
-        </div>
+          <div className="value">{amountLine(cardBills)}</div>
+          <div className="sub">{t('billsCount', { n: cardBills.length })} ›</div>
+        </button>
       </div>
+      <p className="muted" style={{ margin: '-6px 0 12px' }}>{t('tapCardHint')}</p>
     </>
   );
 }
 
 type BillFilter = 'all' | 'unpaid' | 'paid';
 
-function MonthBillsSection({ state, month, update, t }: Props) {
+function MonthBillsSection({
+  state,
+  month,
+  update,
+  t,
+  assignFilter,
+  onClearAssign,
+}: Props & { assignFilter: AssignFilter; onClearAssign: () => void }) {
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<BillFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   // Add-form state
   const [name, setName] = useState('');
@@ -233,6 +307,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
   const [creditCardId, setCreditCardId] = useState<string | undefined>(undefined);
   const [accountId, setAccountId] = useState<string | undefined>(undefined);
   const [paid, setPaid] = useState(true);
+  const [date, setDate] = useState('');
 
   const add = () => {
     if (!name || !amount) return;
@@ -247,7 +322,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
       creditCardId,
       accountId,
       paid,
+      date: date || undefined,
       settledFrom: paid && accountId ? { accountId, amount: amt, currency } : undefined,
+      chargedTo: paid && creditCardId ? { creditCardId, amount: amt, currency } : undefined,
     };
 
     update((s) => {
@@ -258,7 +335,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             `Account "${acc.name}" is in ${acc.currency} but the bill is in ${currency}. ` +
               `The bill will be added unpaid.`
           );
-          const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined };
+          const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined, chargedTo: undefined };
           return {
             ...s,
             months: {
@@ -273,6 +350,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
       }
       let next = s;
       if (paid && accountId) next = adjustAccount(next, accountId, -amt);
+      if (paid && creditCardId) next = adjustCard(next, creditCardId, currency, amt);
       return {
         ...next,
         months: {
@@ -290,6 +368,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
     setCreditCardId(undefined);
     setAccountId(undefined);
     setPaid(true);
+    setDate('');
     setShowAdd(false);
   };
 
@@ -325,6 +404,11 @@ function MonthBillsSection({ state, month, update, t }: Props) {
           }
           next = adjustAccount(next, bill.accountId, -bill.amount);
         }
+        // Paid on a card bill means the charge actually hit the card: add it to
+        // the card's debt once, with a snapshot so unpaying/removing refunds it.
+        if (bill.creditCardId) {
+          next = adjustCard(next, bill.creditCardId, bill.currency, bill.amount);
+        }
         next = {
           ...next,
           months: {
@@ -339,6 +423,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                       settledFrom: bill.accountId
                         ? { accountId: bill.accountId, amount: bill.amount, currency: bill.currency }
                         : undefined,
+                      chargedTo: bill.creditCardId
+                        ? { creditCardId: bill.creditCardId, amount: bill.amount, currency: bill.currency }
+                        : undefined,
                     }
                   : b
               ),
@@ -349,6 +436,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
         if (bill.settledFrom) {
           next = adjustAccount(next, bill.settledFrom.accountId, bill.settledFrom.amount);
         }
+        if (bill.chargedTo) {
+          next = adjustCard(next, bill.chargedTo.creditCardId, bill.chargedTo.currency, -bill.chargedTo.amount);
+        }
         next = {
           ...next,
           months: {
@@ -356,7 +446,7 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             [month.monthKey]: {
               ...next.months[month.monthKey],
               bills: next.months[month.monthKey].bills.map((b) =>
-                b.id === id ? { ...b, paid: false, settledFrom: undefined } : b
+                b.id === id ? { ...b, paid: false, settledFrom: undefined, chargedTo: undefined } : b
               ),
             },
           },
@@ -371,6 +461,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
       let next = s;
       if (bill?.settledFrom) {
         next = adjustAccount(next, bill.settledFrom.accountId, bill.settledFrom.amount);
+      }
+      if (bill?.chargedTo) {
+        next = adjustCard(next, bill.chargedTo.creditCardId, bill.chargedTo.currency, -bill.chargedTo.amount);
       }
       return {
         ...next,
@@ -391,11 +484,34 @@ function MonthBillsSection({ state, month, update, t }: Props) {
         ? state.accounts.find((a) => a.id === b.accountId)?.name
         : undefined;
 
-  const unpaidCount = month.bills.filter((b) => !b.paid).length;
-  const paidCount = month.bills.length - unpaidCount;
-  const visible = month.bills.filter((b) =>
-    filter === 'all' ? true : filter === 'paid' ? b.paid : !b.paid
+  // Scope everything (counts, categories, list) to the active assignment
+  // filter so the chips always agree with what a tapped summary card shows.
+  const scoped = month.bills.filter((b) =>
+    assignFilter === 'card' ? !!b.creditCardId : assignFilter === 'account' ? !b.creditCardId : true
   );
+  const unpaidCount = scoped.filter((b) => !b.paid).length;
+  const paidCount = scoped.length - unpaidCount;
+  const query = search.trim().toLowerCase();
+  const categoriesInMonth = Array.from(new Set(scoped.map((b) => b.category))).sort();
+  const visible = scoped.filter((b) => {
+    if (filter === 'paid' && !b.paid) return false;
+    if (filter === 'unpaid' && b.paid) return false;
+    if (categoryFilter && b.category !== categoryFilter) return false;
+    if (!query) return true;
+    const haystack = [b.name, b.category, targetName(b)].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(query);
+  });
+
+  const amountGroups = new Map<string, Bill[]>();
+  for (const b of month.bills) {
+    if (!b.amount) continue;
+    const key = `${b.currency}:${b.amount}`;
+    const group = amountGroups.get(key);
+    if (group) group.push(b);
+    else amountGroups.set(key, [b]);
+  }
+  const duplicatesOf = (b: Bill) =>
+    (amountGroups.get(`${b.currency}:${b.amount}`) || []).filter((x) => x.id !== b.id);
 
   return (
     <div className="section">
@@ -426,6 +542,9 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             <Field label={t('account')}>
               <AccountSelect state={state} value={accountId} disabled={!!creditCardId} onChange={setAccountId} t={t} />
             </Field>
+            <Field label={t('date')}>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
           </div>
           <div className="entry-actions" style={{ justifyContent: 'space-between' }}>
             <label className="row" style={{ cursor: 'pointer' }}>
@@ -442,9 +561,16 @@ function MonthBillsSection({ state, month, update, t }: Props) {
         <p className="muted">{t('noBillsThisMonth')}</p>
       ) : (
         <>
+          <input
+            type="search"
+            className="search-input"
+            placeholder={t('searchBillsPlaceholder')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
           <div className="chip-row">
             <button className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-              {t('filterAll')} · {month.bills.length}
+              {t('filterAll')} · {scoped.length}
             </button>
             <button className={`chip ${filter === 'unpaid' ? 'active' : ''}`} onClick={() => setFilter('unpaid')}>
               {t('unpaid')} · {unpaidCount}
@@ -452,7 +578,25 @@ function MonthBillsSection({ state, month, update, t }: Props) {
             <button className={`chip ${filter === 'paid' ? 'active' : ''}`} onClick={() => setFilter('paid')}>
               {t('paid')} · {paidCount}
             </button>
+            {assignFilter !== 'all' && (
+              <button className="chip active" onClick={onClearAssign}>
+                {assignFilter === 'card' ? t('creditCardBills') : t('accountBills')} ×
+              </button>
+            )}
           </div>
+
+          {categoriesInMonth.length > 1 && (
+            <select
+              className="search-input"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">{t('allCategoriesOpt')}</option>
+              {categoriesInMonth.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          )}
 
           {visible.length === 0 ? (
             <p className="muted">{t('noBillsMatchFilter')}</p>
@@ -464,20 +608,26 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                   open={expandedId === b.id}
                   onToggle={() => setExpandedId(expandedId === b.id ? null : b.id)}
                   info={
-                    <>
-                      <div className="entry-title">{b.name || '—'}</div>
-                      <div className="entry-meta">
-                        <span className="tag">{b.category}</span>
-                        {b.source === 'subscription' && (
-                          <span className="tag sub">{t('sourceSubscription')}</span>
-                        )}
-                        {targetName(b) && <span>{targetName(b)}</span>}
-                      </div>
-                    </>
+                    <div className="entry-line">
+                      <span
+                        className="cat-dot"
+                        style={{ background: categoryColor(b.category) }}
+                        title={b.category}
+                      />
+                      <span className="entry-title">{b.name || '—'}</span>
+                      {b.source === 'subscription' && (
+                        <span className="sub-glyph" title={t('sourceSubscription')}>↻</span>
+                      )}
+                    </div>
                   }
                   side={
                     <>
-                      <div className="entry-amount">{formatMoney(b.amount, b.currency)}</div>
+                      <div className="entry-amount">
+                        {duplicatesOf(b).length > 0 && (
+                          <span className="dup-dot" title={t('duplicateAmountWarning')} />
+                        )}
+                        {formatMoney(b.amount, b.currency)}
+                      </div>
                       <input
                         type="checkbox"
                         className="checkbox"
@@ -489,6 +639,14 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                     </>
                   }
                 >
+                  <div className="entry-meta" style={{ marginTop: 10 }}>
+                    <span className="tag">{b.category}</span>
+                    {b.source === 'subscription' && (
+                      <span className="tag sub">{t('sourceSubscription')}</span>
+                    )}
+                    {targetName(b) && <span>{targetName(b)}</span>}
+                    {b.date && <span>{b.date}</span>}
+                  </div>
                   <div className="field-grid">
                     <Field label={t('name')} span2>
                       <input value={b.name} onChange={(e) => patchBill(b.id, { name: e.target.value })} />
@@ -497,14 +655,14 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                       <input
                         type="number"
                         value={b.amount}
-                        disabled={b.paid && !!b.settledFrom}
+                        disabled={b.paid && (!!b.settledFrom || !!b.chargedTo)}
                         onChange={(e) => patchBill(b.id, { amount: Number(e.target.value) })}
                       />
                     </Field>
                     <Field label={t('currency')}>
                       <select
                         value={b.currency}
-                        disabled={b.paid && !!b.settledFrom}
+                        disabled={b.paid && (!!b.settledFrom || !!b.chargedTo)}
                         onChange={(e) => patchBill(b.id, { currency: e.target.value as Currency })}
                       >
                         <option value="CRC">₡ CRC</option>
@@ -538,7 +696,21 @@ function MonthBillsSection({ state, month, update, t }: Props) {
                         t={t}
                       />
                     </Field>
+                    <Field label={t('date')}>
+                      <input
+                        type="date"
+                        value={b.date || ''}
+                        onChange={(e) => patchBill(b.id, { date: e.target.value || undefined })}
+                      />
+                    </Field>
                   </div>
+                  {duplicatesOf(b).length > 0 && (
+                    <p className="muted dup-note">
+                      {t('duplicateAmountWith', {
+                        names: duplicatesOf(b).map((x) => `"${x.name || '—'}"`).join(', '),
+                      })}
+                    </p>
+                  )}
                   <div className="entry-actions">
                     <button className="danger" onClick={() => remove(b.id)}>{t('remove')}</button>
                   </div>
@@ -625,11 +797,36 @@ function SubscriptionsSection({
     : n === 12 ? t('freqYearly')
     : t('freqMonthly');
 
-  const activeCount = state.subscriptions.filter((s) => s.active).length;
+  const activeSubs = state.subscriptions.filter((s) => s.active);
+  const activeCount = activeSubs.length;
+
+  // Spread each active subscription's cost evenly across its billing frequency
+  // (e.g. a quarterly charge counts as 1/3 per month) to get a comparable monthly average.
+  const primary = state.primaryCurrency;
+  const secondary: Currency = primary === 'CRC' ? 'USD' : 'CRC';
+  const monthlyFor = (cur: Currency) =>
+    activeSubs
+      .filter((s) => s.currency === cur)
+      .reduce((sum, s) => sum + s.amount / (s.frequencyMonths || 1), 0);
+  const monthlyPrimary = monthlyFor(primary);
+  const monthlySecondary = monthlyFor(secondary);
+
   const summary =
-    state.subscriptions.length === 0
-      ? t('noSubscriptionsYet')
-      : `${t('subscriptionsCount', { n: state.subscriptions.length })} · ${t('activeCount', { n: activeCount })}`;
+    state.subscriptions.length === 0 ? (
+      t('noSubscriptionsYet')
+    ) : (
+      <>
+        <div>
+          {t('subscriptionsCount', { n: state.subscriptions.length })} · {t('activeCount', { n: activeCount })}
+        </div>
+        {(monthlyPrimary !== 0 || monthlySecondary !== 0) && (
+          <div>
+            {t('monthlySpend')}: {formatMoney(monthlyPrimary, primary)}
+            {monthlySecondary !== 0 && <> · {formatMoney(monthlySecondary, secondary)}</>}
+          </div>
+        )}
+      </>
+    );
 
   return (
     <CollapsibleSection title={t('subscriptionsTitle')} summary={summary} open={open} onToggle={() => setOpen((v) => !v)}>

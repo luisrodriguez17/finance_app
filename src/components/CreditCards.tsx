@@ -50,18 +50,13 @@ export default function CreditCards({ state, update, t }: Props) {
   const remove = (id: string) =>
     update((s) => ({ ...s, creditCards: s.creditCards.filter((c) => c.id !== id) }));
 
-  const cardBillsByCard = (cardId: string, currency: 'CRC' | 'USD') =>
-    Object.values(state.months)
-      .flatMap((m) => m.bills)
-      .filter((b) => b.creditCardId === cardId && b.currency === currency)
-      .reduce((s, b) => s + b.amount, 0);
-
+  // The card's owed amounts ARE its debt. Bills add to them once when marked
+  // paid (see Bills), "Pay" subtracts payments, and "Correct" sets them to
+  // match the bank's real totals.
   const startCorrection = (c: CreditCard) => {
-    const totalCRC = c.owedCRC + cardBillsByCard(c.id, 'CRC');
-    const totalUSD = c.owedUSD + cardBillsByCard(c.id, 'USD');
     setCorrectingId(c.id);
-    setRealCRC(String(totalCRC));
-    setRealUSD(String(totalUSD));
+    setRealCRC(String(c.owedCRC));
+    setRealUSD(String(c.owedUSD));
   };
 
   const cancelCorrection = () => {
@@ -96,32 +91,15 @@ export default function CreditCards({ state, update, t }: Props) {
   };
 
   const applyCorrection = (c: CreditCard) => {
-    const currentCRC = c.owedCRC + cardBillsByCard(c.id, 'CRC');
-    const currentUSD = c.owedUSD + cardBillsByCard(c.id, 'USD');
-    const deltaCRC = Number(realCRC) - currentCRC;
-    const deltaUSD = Number(realUSD) - currentUSD;
-
-    if (Math.abs(deltaCRC) < 0.001 && Math.abs(deltaUSD) < 0.001) {
-      cancelCorrection();
-      return;
-    }
-
-    // Absorb the difference into the card's manual debt so the card total lands
-    // exactly on the real value. This keeps bills already assigned to the card
-    // intact and avoids polluting the Bills list with a confusing offset entry.
     updateCard(c.id, {
-      owedCRC: c.owedCRC + deltaCRC,
-      owedUSD: c.owedUSD + deltaUSD,
+      owedCRC: Number(realCRC) || 0,
+      owedUSD: Number(realUSD) || 0,
     });
     cancelCorrection();
   };
 
-  const totalCRC =
-    state.creditCards.reduce((s, c) => s + c.owedCRC, 0) +
-    state.creditCards.reduce((s, c) => s + cardBillsByCard(c.id, 'CRC'), 0);
-  const totalUSD =
-    state.creditCards.reduce((s, c) => s + c.owedUSD, 0) +
-    state.creditCards.reduce((s, c) => s + cardBillsByCard(c.id, 'USD'), 0);
+  const totalCRC = state.creditCards.reduce((s, c) => s + c.owedCRC, 0);
+  const totalUSD = state.creditCards.reduce((s, c) => s + c.owedUSD, 0);
   const combined =
     convert(totalCRC, 'CRC', state.primaryCurrency, state.exchangeRate) +
     convert(totalUSD, 'USD', state.primaryCurrency, state.exchangeRate);
@@ -169,34 +147,21 @@ export default function CreditCards({ state, update, t }: Props) {
           <>
             <div className="entry-list">
               {state.creditCards.map((c) => {
-                const fromBillsCRC = cardBillsByCard(c.id, 'CRC');
-                const fromBillsUSD = cardBillsByCard(c.id, 'USD');
-                const totalCardCRC = c.owedCRC + fromBillsCRC;
-                const totalCardUSD = c.owedUSD + fromBillsUSD;
                 const isCorrecting = correctingId === c.id;
-                const previewDeltaCRC = isCorrecting ? Number(realCRC) - totalCardCRC : 0;
-                const previewDeltaUSD = isCorrecting ? Number(realUSD) - totalCardUSD : 0;
+                const previewDeltaCRC = isCorrecting ? Number(realCRC) - c.owedCRC : 0;
+                const previewDeltaUSD = isCorrecting ? Number(realUSD) - c.owedUSD : 0;
                 const isPaying = payingId === c.id;
                 return (
                   <EntryItem
                     key={c.id}
                     open={expandedId === c.id}
                     onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
-                    info={
-                      <>
-                        <div className="entry-title">{c.name || '—'}</div>
-                        <div className="entry-meta">
-                          <span>
-                            {t('fromBills')}: {formatMoney(fromBillsCRC, 'CRC')} · {formatMoney(fromBillsUSD, 'USD')}
-                          </span>
-                        </div>
-                      </>
-                    }
+                    info={<div className="entry-title">{c.name || '—'}</div>}
                     side={
                       <>
-                        {totalCardCRC !== 0 && <div className="entry-amount">{formatMoney(totalCardCRC, 'CRC')}</div>}
-                        {totalCardUSD !== 0 && <div className="entry-amount">{formatMoney(totalCardUSD, 'USD')}</div>}
-                        {totalCardCRC === 0 && totalCardUSD === 0 && <div className="entry-amount muted">—</div>}
+                        {c.owedCRC !== 0 && <div className="entry-amount">{formatMoney(c.owedCRC, 'CRC')}</div>}
+                        {c.owedUSD !== 0 && <div className="entry-amount">{formatMoney(c.owedUSD, 'USD')}</div>}
+                        {c.owedCRC === 0 && c.owedUSD === 0 && <div className="entry-amount muted">—</div>}
                       </>
                     }
                   >
@@ -204,31 +169,19 @@ export default function CreditCards({ state, update, t }: Props) {
                       <Field label={t('name')} span2>
                         <input value={c.name} onChange={(e) => updateCard(c.id, { name: e.target.value })} />
                       </Field>
-                      <Field label={t('manualCRC')}>
+                      <Field label={t('totalCRC')}>
                         <input
                           type="number"
                           value={c.owedCRC}
                           onChange={(e) => updateCard(c.id, { owedCRC: Number(e.target.value) })}
                         />
                       </Field>
-                      <Field label={t('manualUSD')}>
+                      <Field label={t('totalUSD')}>
                         <input
                           type="number"
                           value={c.owedUSD}
                           onChange={(e) => updateCard(c.id, { owedUSD: Number(e.target.value) })}
                         />
-                      </Field>
-                      <Field label={t('fromBillsCRC')}>
-                        <span className="entry-amount muted">{formatMoney(fromBillsCRC, 'CRC')}</span>
-                      </Field>
-                      <Field label={t('fromBillsUSD')}>
-                        <span className="entry-amount muted">{formatMoney(fromBillsUSD, 'USD')}</span>
-                      </Field>
-                      <Field label={t('totalCRC')}>
-                        <span className="entry-amount">{formatMoney(totalCardCRC, 'CRC')}</span>
-                      </Field>
-                      <Field label={t('totalUSD')}>
-                        <span className="entry-amount">{formatMoney(totalCardUSD, 'USD')}</span>
                       </Field>
                     </div>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import type { AppState, MonthSnapshot, Subscription } from './types';
+import type { AppState, Bill, MonthSnapshot, Subscription } from './types';
 import { monthKey, monthDiff, nextMonthKey } from './utils';
 
 const STORAGE_KEY = 'finance-app-state-v1';
@@ -229,4 +229,50 @@ export function applyDueSalaries(state: AppState, today: Date = new Date()): App
       appliedDates: Array.from(new Set([...schedule.appliedDates, ...toApply])),
     },
   };
+}
+
+/**
+ * A bill created by the old credit-card "Correct" flows, which recorded the
+ * correction as an "Offset" bill instead of adjusting the card's debt. These
+ * aren't real spending and pollute the Bills totals and Analytics.
+ */
+const isLegacyOffset = (b: Bill) =>
+  !!b.creditCardId && b.name.startsWith('Offset (');
+
+export interface OffsetCleanupPreview {
+  count: number;
+  totalCRC: number;
+  totalUSD: number;
+  cardCount: number;
+}
+
+export function previewOffsetCleanup(state: AppState): OffsetCleanupPreview {
+  let count = 0;
+  let totalCRC = 0;
+  let totalUSD = 0;
+  const cardIds = new Set<string>();
+  for (const month of Object.values(state.months)) {
+    for (const b of month.bills) {
+      if (!isLegacyOffset(b)) continue;
+      count++;
+      cardIds.add(b.creditCardId!);
+      if (b.currency === 'CRC') totalCRC += b.amount;
+      else totalUSD += b.amount;
+    }
+  }
+  return { count, totalCRC, totalUSD, cardCount: cardIds.size };
+}
+
+/**
+ * Removes legacy "Offset" correction bills from every month. Card debt is not
+ * touched: it lives on each card's owed totals now, so after cleaning up, use
+ * "Correct" on each card to set its real totals from the bank.
+ */
+export function cleanupOffsetBills(state: AppState): AppState {
+  const months: AppState['months'] = {};
+  for (const [key, month] of Object.entries(state.months)) {
+    const keptBills = month.bills.filter((b) => !isLegacyOffset(b));
+    months[key] = keptBills.length === month.bills.length ? month : { ...month, bills: keptBills };
+  }
+  return { ...state, months };
 }
