@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { AppState, Bill } from '../types';
 import { convert, formatMoney, monthLabel } from '../utils';
-import type { T } from '../i18n';
+import { categoryLabel, type T } from '../i18n';
 import {
   BarChart,
   Bar,
@@ -270,7 +270,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
               <option value="">{t('allCategoriesOpt')}</option>
               {categoryTotals.map((c) => (
                 <option key={c.name} value={c.name}>
-                  {c.name}
+                  {categoryLabel(t, c.name)}
                 </option>
               ))}
             </select>
@@ -316,9 +316,13 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
                 </Pie>
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(v: unknown) => formatMoney(Number(v), primary)}
+                  formatter={(v: unknown, _name: unknown, entry: { payload?: { name?: string } }) => [
+                    formatMoney(Number(v), primary),
+                    categoryLabel(t, entry?.payload?.name ?? ''),
+                  ]}
                 />
                 <Legend
+                  formatter={(value: string) => categoryLabel(t, value)}
                   onClick={(d: { value?: string }) => {
                     if (d?.value) setSelectedCategory((prev) => (prev === d.value ? null : d.value!));
                   }}
@@ -333,7 +337,7 @@ export default function Analytics({ state, t }: { state: AppState; t: T }) {
       <div className="section">
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
           <h3 style={{ margin: 0 }}>
-            {selectedCategory ? t('billsInCat', { cat: selectedCategory }) : t('allBills')}
+            {selectedCategory ? t('billsInCat', { cat: categoryLabel(t, selectedCategory) }) : t('allBills')}
           </h3>
           <span className="muted">
             {billsForCategory.length || (selectedCategory ? 0 : t('allCategories'))}{' '}

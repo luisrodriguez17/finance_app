@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import type { AppState, Bill, Currency, MonthSnapshot, Subscription } from '../types';
 import { formatMoney, uid, convert, categoryColor } from '../utils';
 import { ensureMonth } from '../store';
-import type { T } from '../i18n';
+import { categoryLabel, type T } from '../i18n';
 import { AddToggle, CollapsibleSection, EntryItem, Field } from './ui';
 
 type Props = {
@@ -177,7 +177,7 @@ function CategorySelect({
     <div className="row" style={{ gap: 4 }}>
       <select value={value} onChange={(e) => onChange(e.target.value)} style={{ flex: 1, minWidth: 0 }}>
         {state.categories.map((c) => (
-          <option key={c} value={c}>{c}</option>
+          <option key={c} value={c}>{categoryLabel(t, c)}</option>
         ))}
       </select>
       <button type="button" className="ghost" onClick={() => setAdding(true)} title={t('addNewCategoryTitle')}>
@@ -593,7 +593,7 @@ function MonthBillsSection({
             >
               <option value="">{t('allCategoriesOpt')}</option>
               {categoriesInMonth.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>{categoryLabel(t, c)}</option>
               ))}
             </select>
           )}
@@ -612,7 +612,7 @@ function MonthBillsSection({
                       <span
                         className="cat-dot"
                         style={{ background: categoryColor(b.category) }}
-                        title={b.category}
+                        title={categoryLabel(t, b.category)}
                       />
                       <span className="entry-title">{b.name || '—'}</span>
                       {b.source === 'subscription' && (
@@ -640,7 +640,7 @@ function MonthBillsSection({
                   }
                 >
                   <div className="entry-meta" style={{ marginTop: 10 }}>
-                    <span className="tag">{b.category}</span>
+                    <span className="tag">{categoryLabel(t, b.category)}</span>
                     {b.source === 'subscription' && (
                       <span className="tag sub">{t('sourceSubscription')}</span>
                     )}
@@ -892,7 +892,7 @@ function SubscriptionsSection({
                 <>
                   <div className="entry-title">{s.name}</div>
                   <div className="entry-meta">
-                    <span className="tag">{s.category}</span>
+                    <span className="tag">{categoryLabel(t, s.category)}</span>
                     <span>{freqLabel(s.frequencyMonths)}</span>
                     {!s.active && <span className="tag sub">{t('inactive')}</span>}
                   </div>
