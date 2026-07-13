@@ -7,7 +7,7 @@ import {
   cleanupOffsetBills,
 } from '../store';
 import { formatMoney } from '../utils';
-import type { T } from '../i18n';
+import { categoryLabel, type T } from '../i18n';
 
 type Props = {
   state: AppState;
@@ -143,7 +143,7 @@ export default function Settings({ state, update, t }: Props) {
         <div className="row" style={{ marginTop: 12 }}>
           {state.categories.map((c) => (
             <span key={c} className="tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              {c}
+              {categoryLabel(t, c)}
               <button
                 className="ghost"
                 style={{ padding: '0 6px', fontSize: '0.7rem' }}

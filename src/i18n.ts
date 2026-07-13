@@ -290,6 +290,15 @@ const en: Dict = {
   cleanupButton: 'Clean up now',
   cleanupConfirm:
     'Remove {n} old "Offset" correction bill(s)? Card debt won\'t change — after cleaning, set each card\'s real totals with "Correct".',
+
+  // Default categories (seeded on new data)
+  cat_Food: 'Food',
+  cat_Internet: 'Internet',
+  cat_Rent: 'Rent',
+  cat_Utilities: 'Utilities',
+  cat_Entertainment: 'Entertainment',
+  cat_Savings: 'Savings',
+  cat_Other: 'Other',
 };
 
 const es: Dict = {
@@ -581,6 +590,15 @@ const es: Dict = {
   cleanupButton: 'Limpiar ahora',
   cleanupConfirm:
     '¿Eliminar {n} gasto(s) "Offset" antiguo(s)? La deuda de las tarjetas no cambia — después de limpiar, fije los totales reales de cada tarjeta con "Corregir".',
+
+  // Categorías por defecto (datos iniciales)
+  cat_Food: 'Comida',
+  cat_Internet: 'Internet',
+  cat_Rent: 'Alquiler',
+  cat_Utilities: 'Servicios',
+  cat_Entertainment: 'Entretenimiento',
+  cat_Savings: 'Ahorros',
+  cat_Other: 'Otro',
 };
 
 const dicts: Record<Language, Dict> = { en, es };
@@ -599,3 +617,20 @@ export function tFn(lang: Language) {
 }
 
 export type T = ReturnType<typeof tFn>;
+
+const DEFAULT_CATEGORY_KEYS: Record<string, string> = {
+  Food: 'cat_Food',
+  Internet: 'cat_Internet',
+  Rent: 'cat_Rent',
+  Utilities: 'cat_Utilities',
+  Entertainment: 'cat_Entertainment',
+  Savings: 'cat_Savings',
+  Other: 'cat_Other',
+};
+
+// Built-in seeded categories are translated via cat_* keys; user-added
+// custom categories have no translation and are shown as entered.
+export function categoryLabel(t: T, name: string): string {
+  const key = DEFAULT_CATEGORY_KEYS[name];
+  return key ? t(key) : name;
+}
