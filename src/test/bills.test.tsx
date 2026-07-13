@@ -3,6 +3,7 @@ import { fireEvent, screen } from '@testing-library/react';
 import { renderApp, goTo, goToMore, entry, addForm, section, hero, card, money } from './helpers';
 import { seededState, RATE } from './fixtures';
 import type { User } from './helpers';
+import { todayISODate } from '../utils';
 
 const crc = (n: number) => money(n, 'CRC');
 const usd = (n: number) => money(n, 'USD');
@@ -120,6 +121,35 @@ describe('Bills — with data', () => {
     expect(container.querySelectorAll('.dup-dot')).toHaveLength(2);
     await user.click(screen.getByText('Water'));
     expect(screen.getByText(/Same amount as "Amazon" this month/)).toBeInTheDocument();
+  });
+
+  it('defaults the date field to today', async () => {
+    const { user, container } = renderApp(seededState());
+    await goTo(user, 'Bills');
+
+    await openAddBill(user);
+    const form = addForm(container);
+    const dateField = form.getByText('Date').closest('.field')!;
+    expect(dateField.querySelector('input')).toHaveValue(todayISODate());
+  });
+
+  it('remembers the last account/card used across bill additions', async () => {
+    const { user, container } = renderApp(seededState());
+    await goTo(user, 'Bills');
+
+    await openAddBill(user);
+    let form = addForm(container);
+    await user.type(form.getByPlaceholderText('Name (e.g. Electricity)'), 'Water');
+    await user.type(form.getByPlaceholderText('Amount'), '10000');
+    await user.selectOptions(
+      form.getByDisplayValue('No account'),
+      screen.getByRole('option', { name: 'BAC Checking' })
+    );
+    await user.click(form.getByRole('button', { name: 'Add bill' }));
+
+    await openAddBill(user);
+    form = addForm(container);
+    expect(form.getByDisplayValue('BAC Checking')).toBeInTheDocument();
   });
 
   it('stores an optional date on a bill and shows it in the details', async () => {

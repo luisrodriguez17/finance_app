@@ -117,6 +117,9 @@ export interface AppState {
   includeImaginaryInDashboard: boolean;
   reserves: SavingsReserve[];
   salarySchedule: SalarySchedule;
+  /** Account/card most recently used when adding a bill, prefilled on the add-bill form. */
+  lastBillAccountId?: string;
+  lastBillCreditCardId?: string;
   language: Language;
   theme: Theme;
 }
