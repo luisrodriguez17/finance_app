@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import type { AppState, Bill, Currency, MonthSnapshot, Subscription } from '../types';
-import { formatMoney, uid, convert, categoryColor } from '../utils';
+import { formatMoney, uid, convert, categoryColor, todayISODate } from '../utils';
 import { ensureMonth } from '../store';
 import type { T } from '../i18n';
 import { AddToggle, CollapsibleSection, EntryItem, Field } from './ui';
@@ -304,10 +304,10 @@ function MonthBillsSection({
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState<Currency>(state.primaryCurrency);
   const [category, setCategory] = useState(state.categories[0] || 'Other');
-  const [creditCardId, setCreditCardId] = useState<string | undefined>(undefined);
-  const [accountId, setAccountId] = useState<string | undefined>(undefined);
+  const [creditCardId, setCreditCardId] = useState<string | undefined>(state.lastBillCreditCardId);
+  const [accountId, setAccountId] = useState<string | undefined>(state.lastBillAccountId);
   const [paid, setPaid] = useState(true);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(todayISODate());
 
   const add = () => {
     if (!name || !amount) return;
@@ -338,6 +338,8 @@ function MonthBillsSection({
           const fallback: Bill = { ...newBill, paid: false, settledFrom: undefined, chargedTo: undefined };
           return {
             ...s,
+            lastBillAccountId: accountId,
+            lastBillCreditCardId: creditCardId,
             months: {
               ...s.months,
               [month.monthKey]: {
@@ -353,6 +355,8 @@ function MonthBillsSection({
       if (paid && creditCardId) next = adjustCard(next, creditCardId, currency, amt);
       return {
         ...next,
+        lastBillAccountId: accountId,
+        lastBillCreditCardId: creditCardId,
         months: {
           ...next.months,
           [month.monthKey]: {
@@ -365,10 +369,8 @@ function MonthBillsSection({
 
     setName('');
     setAmount('');
-    setCreditCardId(undefined);
-    setAccountId(undefined);
     setPaid(true);
-    setDate('');
+    setDate(todayISODate());
     setShowAdd(false);
   };
 
